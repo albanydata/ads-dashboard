@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Albany Data Systems — Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient"></div>
+
+  <main class="screen">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="org" id="org">ALBANY DATA SYSTEMS</h1>
+        <div class="datetime">
+          <span id="date" class="date">—</span>
+          <span class="dot-sep">·</span>
+          <span id="time" class="time">—</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="overall" id="overall">
+          <span class="overall-light" id="overall-light"></span>
+          <span class="overall-message" id="overall-message">Loading…</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Two-column content: status board + focus (left), this week (right) -->
+    <div class="content">
+      <div class="col-main">
+        <!-- Status board -->
+        <section class="board" id="board" aria-label="Status board"></section>
+
+        <!-- Your Focus -->
+        <section class="focus-card" id="focus-card">
+          <div class="focus-head">
+            <h2>YOUR FOCUS</h2>
+            <span class="focus-sub">What matters right now</span>
+          </div>
+          <ol class="focus-list" id="focus-list"></ol>
+          <p class="reassurance" id="reassurance"></p>
+        </section>
+      </div>
+
+      <aside class="col-side">
+        <!-- This Week -->
+        <section class="week-card" id="week-card">
+          <div class="week-head">
+            <h2>THIS WEEK</h2>
+            <span class="week-sub">Most important tasks</span>
+          </div>
+          <ul class="week-list" id="week-list"></ul>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Connection / footer -->
+  <footer class="footer">
+    <span class="conn" id="conn"><span class="conn-dot"></span> Live</span>
+    <button class="edit-toggle" id="edit-toggle" title="Edit dashboard (local dev)">Edit</button>
+  </footer>
+
+  <!-- Expanded card detail (modal-ish overlay) -->
+  <div class="overlay" id="overlay" hidden>
+    <div class="panel" id="panel" role="dialog" aria-modal="true">
+      <button class="panel-close" id="panel-close" aria-label="Close">✕</button>
+      <div class="panel-head">
+        <span class="panel-light" id="panel-light"></span>
+        <h2 id="panel-title">Category</h2>
+      </div>
+      <div class="panel-summary" id="panel-summary"></div>
+      <div class="panel-items" id="panel-items"></div>
+    </div>
+  </div>
+
+  <!-- Lock screen (shown only when the API requires a token on this device) -->
+  <div class="overlay" id="lock" hidden>
+    <div class="panel lock-panel" role="dialog" aria-modal="true">
+      <h2 class="lock-title">🔒 Locked</h2>
+      <p class="editor-hint">Enter the dashboard token to view this screen on this device. You only do this once.</p>
+      <div class="editor-add">
+        <input type="password" id="lock-token" placeholder="Dashboard token…" autocomplete="current-password" />
+        <button class="btn" id="lock-go">Unlock</button>
+      </div>
+      <p class="lock-err" id="lock-err" hidden>Invalid token — try again.</p>
+    </div>
+  </div>
+
+  <!-- Lightweight editor for local development -->
+  <div class="overlay" id="editor" hidden>
+    <div class="panel editor-panel" role="dialog" aria-modal="true">
+      <button class="panel-close" id="editor-close" aria-label="Close">✕</button>
+      <h2 class="editor-title">Dashboard Editor <span class="editor-tag">local dev</span></h2>
+
+      <div class="editor-section">
+        <h3>Category status &amp; summary</h3>
+        <div id="editor-categories" class="editor-cats"></div>
+      </div>
+
+      <div class="editor-section">
+        <h3>Your Focus</h3>
+        <div id="editor-focus" class="editor-focus"></div>
+        <div class="editor-add">
+          <input type="text" id="new-focus-title" placeholder="New priority title…" />
+          <input type="text" id="new-focus-detail" placeholder="Detail (optional)…" />
+          <button id="add-focus" class="btn">Add</button>
+        </div>
+      </div>
+
+      <div class="editor-section">
+        <h3>This Week</h3>
+        <div id="editor-week" class="editor-focus"></div>
+        <div class="editor-add">
+          <input type="text" id="new-week-title" placeholder="New task title…" />
+          <input type="text" id="new-week-meta" placeholder="Meta (e.g. BMTS · due Friday)…" />
+          <button id="add-week" class="btn">Add</button>
+        </div>
+      </div>
+
+      <div class="editor-section">
+        <h3>Reassurance line</h3>
+        <div class="editor-add">
+          <input type="text" id="reassurance-input" placeholder="Everything else can wait." />
+          <button id="save-reassurance" class="btn">Save</button>
+        </div>
+      </div>
+
+      <p class="editor-hint">Everything here is also controllable via the <code>/api</code> — this editor just calls it.</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

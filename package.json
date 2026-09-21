@@ -1,0 +1,14 @@
+{
+  "name": "ads-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Albany Data Systems — Chief of Staff Dashboard. A calm, glanceable command center backed by a simple AI-controllable API.",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

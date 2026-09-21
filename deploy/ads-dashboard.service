@@ -1,0 +1,27 @@
+# systemd unit — keeps the dashboard running and restarts it on crash/reboot.
+# Install:
+#   sudo cp deploy/ads-dashboard.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now ads-dashboard
+# Logs:
+#   journalctl -u ads-dashboard -f
+
+[Unit]
+Description=Albany Data Systems — Chief of Staff Dashboard
+After=network.target
+
+[Service]
+Type=simple
+# Adjust User and paths to match your instance:
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ads-dashboard
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+# Reads PORT and DASHBOARD_TOKEN from the .env file in WorkingDirectory.
+# (Or set them here instead:)
+# Environment=PORT=4300
+# Environment=DASHBOARD_TOKEN=your-secret-here
+
+[Install]
+WantedBy=multi-user.target

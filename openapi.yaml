@@ -1,0 +1,239 @@
+openapi: 3.1.0
+info:
+  title: Albany Data Systems — Chief of Staff Dashboard
+  description: >
+    Read and control the ADS command-center dashboard. Categories are status
+    cards (TODAY, NEEDS YOU, BMTS, CLIENTS / SALES, PPA, EMAIL, MONEY, SYSTEMS).
+    "focus" is the small list of top priorities. "week" is the This Week task list.
+    Status is always one of: green, yellow, red, purple.
+  version: 1.0.0
+servers:
+  # >>> Replace with your public HTTPS URL (ngrok while testing, your domain in prod).
+  - url: https://YOUR-SUBDOMAIN.ngrok-free.app
+security:
+  - bearerAuth: []
+paths:
+  /api/state:
+    get:
+      operationId: getState
+      summary: Read the entire dashboard (categories, focus, week, overall status).
+      responses:
+        '200': { description: Full dashboard state }
+  /api/categories/{key}:
+    get:
+      operationId: getCategory
+      summary: Read one category by id or label (e.g. "bmts" or "BMTS").
+      parameters: [{ $ref: '#/components/parameters/Key' }]
+      responses: { '200': { description: The category } }
+    patch:
+      operationId: updateCategory
+      summary: Change a category's status, summary, or label.
+      parameters: [{ $ref: '#/components/parameters/Key' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { $ref: '#/components/schemas/Status' }
+                summary: { type: string, description: Short line shown on the card }
+                label: { type: string }
+      responses: { '200': { description: Updated category } }
+  /api/categories/{key}/items:
+    post:
+      operationId: addCategoryItem
+      summary: Add a detail item revealed when the category card is expanded.
+      parameters: [{ $ref: '#/components/parameters/Key' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string }
+                status: { $ref: '#/components/schemas/Status' }
+                note: { type: string }
+      responses: { '201': { description: Created item } }
+  /api/categories/{key}/items/{itemId}:
+    patch:
+      operationId: updateCategoryItem
+      summary: Update a category detail item.
+      parameters:
+        - { $ref: '#/components/parameters/Key' }
+        - { $ref: '#/components/parameters/ItemId' }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: { type: string }
+                status: { $ref: '#/components/schemas/Status' }
+                note: { type: string }
+      responses: { '200': { description: Updated item } }
+    delete:
+      operationId: deleteCategoryItem
+      summary: Remove a category detail item.
+      parameters:
+        - { $ref: '#/components/parameters/Key' }
+        - { $ref: '#/components/parameters/ItemId' }
+      responses: { '200': { description: Deleted } }
+  /api/focus:
+    get:
+      operationId: listFocus
+      summary: List the top priorities (Your Focus).
+      responses: { '200': { description: Focus list } }
+    post:
+      operationId: addFocus
+      summary: Add a priority. Use position "top" to make it number one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string }
+                detail: { type: string }
+                position: { type: string, enum: [top], description: Put it first }
+      responses: { '201': { description: Created priority } }
+  /api/focus/{id}:
+    patch:
+      operationId: updateFocus
+      summary: Edit a priority, or move it to the top with position "top".
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                detail: { type: string }
+                position: { type: string, enum: [top] }
+      responses: { '200': { description: Updated } }
+    delete:
+      operationId: deleteFocus
+      summary: Remove a priority (e.g. it's handled).
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { description: Deleted } }
+  /api/focus/reorder:
+    post:
+      operationId: reorderFocus
+      summary: Reorder priorities by passing the full list of ids in order.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order: { type: array, items: { type: string } }
+      responses: { '200': { description: Reordered } }
+  /api/week:
+    get:
+      operationId: listWeek
+      summary: List the This Week tasks.
+      responses: { '200': { description: Week task list } }
+    post:
+      operationId: addWeekTask
+      summary: Add a task to This Week.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string }
+                meta: { type: string, description: 'Small context line, e.g. "BMTS · due Friday"' }
+                status: { $ref: '#/components/schemas/Status' }
+                position: { type: string, enum: [top] }
+      responses: { '201': { description: Created task } }
+  /api/week/{id}:
+    patch:
+      operationId: updateWeekTask
+      summary: Update a task, mark it done, change status, or move to top.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                meta: { type: string }
+                status: { $ref: '#/components/schemas/Status' }
+                done: { type: boolean }
+                position: { type: string, enum: [top] }
+      responses: { '200': { description: Updated task } }
+    delete:
+      operationId: deleteWeekTask
+      summary: Remove a This Week task.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { description: Deleted } }
+  /api/overall:
+    patch:
+      operationId: setOverall
+      summary: Pin an overall banner override, or clear it with override=null.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                override:
+                  type: object
+                  nullable: true
+                  properties:
+                    status: { $ref: '#/components/schemas/Status' }
+                    message: { type: string }
+      responses: { '200': { description: Overall status } }
+  /api/reassurance:
+    patch:
+      operationId: setReassurance
+      summary: Set the reassuring line under Your Focus.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: { type: string }
+      responses: { '200': { description: Updated } }
+  /api/history:
+    get:
+      operationId: getHistory
+      summary: Recent changes to the dashboard, newest first.
+      responses: { '200': { description: History list } }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    Key:
+      name: key
+      in: path
+      required: true
+      schema: { type: string }
+      description: Category id or label (case-insensitive), e.g. bmts or "CLIENTS / SALES".
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    ItemId:
+      name: itemId
+      in: path
+      required: true
+      schema: { type: string }
+  schemas:
+    Status:
+      type: string
+      enum: [green, yellow, red, purple]
+      description: green=fine, yellow=needs attention, red=urgent, purple=in progress.

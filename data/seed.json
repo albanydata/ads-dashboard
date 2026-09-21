@@ -1,0 +1,150 @@
+{
+  "org": "ALBANY DATA SYSTEMS",
+  "overall": {
+    "override": null
+  },
+  "reassurance": "Everything else can wait.",
+  "categories": [
+    {
+      "id": "today",
+      "label": "TODAY",
+      "status": "green",
+      "summary": "No meetings · 3 priorities",
+      "order": 0,
+      "items": [
+        { "id": "today-1", "text": "No meetings scheduled", "status": "green", "note": "" },
+        { "id": "today-2", "text": "3 priorities in focus", "status": "green", "note": "See Your Focus below" }
+      ]
+    },
+    {
+      "id": "needs-you",
+      "label": "NEEDS YOU",
+      "status": "yellow",
+      "summary": "PPA enrollment question · 1 item",
+      "order": 1,
+      "items": [
+        { "id": "needs-1", "text": "PPA enrollment question awaiting your decision", "status": "yellow", "note": "Active enrollment discussion — respond if needed" }
+      ]
+    },
+    {
+      "id": "bmts",
+      "label": "BMTS",
+      "status": "green",
+      "summary": "14 active sites · 2 tasks · No critical issues",
+      "order": 2,
+      "items": [
+        { "id": "bmts-1", "text": "2 open tasks", "status": "green", "note": "" },
+        { "id": "bmts-2", "text": "1 site needs attention", "status": "yellow", "note": "Minor content review" },
+        { "id": "bmts-3", "text": "1 social connection awaiting approval", "status": "yellow", "note": "Facebook page link" },
+        { "id": "bmts-4", "text": "0 critical errors", "status": "green", "note": "" }
+      ]
+    },
+    {
+      "id": "clients-sales",
+      "label": "CLIENTS / SALES",
+      "status": "yellow",
+      "summary": "1 new ADS inquiry needs review",
+      "order": 3,
+      "items": [
+        { "id": "clients-1", "text": "New website inquiry needs disposition", "status": "yellow", "note": "Determine next step" }
+      ]
+    },
+    {
+      "id": "ppa",
+      "label": "PPA",
+      "status": "green",
+      "summary": "Operating normally · 1 active conversation",
+      "order": 4,
+      "items": [
+        { "id": "ppa-1", "text": "1 active enrollment conversation", "status": "purple", "note": "In progress — no action required yet" }
+      ]
+    },
+    {
+      "id": "email",
+      "label": "EMAIL",
+      "status": "green",
+      "summary": "Nothing important waiting",
+      "order": 5,
+      "items": []
+    },
+    {
+      "id": "money",
+      "label": "MONEY",
+      "status": "green",
+      "summary": "Nothing requiring attention",
+      "order": 6,
+      "items": []
+    },
+    {
+      "id": "systems",
+      "label": "SYSTEMS",
+      "status": "green",
+      "summary": "Everything operational",
+      "order": 7,
+      "items": []
+    }
+  ],
+  "focus": [
+    {
+      "id": "focus-1",
+      "title": "Social Platform Approvals",
+      "detail": "Complete Facebook, Instagram, TikTok, Pinterest and YouTube application/approval work for BMTS.",
+      "order": 0
+    },
+    {
+      "id": "focus-2",
+      "title": "ADS Lead",
+      "detail": "Determine disposition of new website inquiry.",
+      "order": 1
+    },
+    {
+      "id": "focus-3",
+      "title": "PPA Enrollment",
+      "detail": "Monitor/respond to active enrollment discussion if needed.",
+      "order": 2
+    }
+  ],
+  "week": [
+    {
+      "id": "week-1",
+      "title": "Complete social platform approvals",
+      "meta": "BMTS · due Friday",
+      "status": "yellow",
+      "done": false,
+      "order": 0
+    },
+    {
+      "id": "week-2",
+      "title": "Finalize new ADS website proposal",
+      "meta": "ADS · Sales",
+      "status": "yellow",
+      "done": false,
+      "order": 1
+    },
+    {
+      "id": "week-3",
+      "title": "PPA enrollment follow-ups",
+      "meta": "PPA · in progress",
+      "status": "purple",
+      "done": false,
+      "order": 2
+    },
+    {
+      "id": "week-4",
+      "title": "Review BMTS quality alerts",
+      "meta": "BMTS · on track",
+      "status": "green",
+      "done": false,
+      "order": 3
+    },
+    {
+      "id": "week-5",
+      "title": "Send monthly client update emails",
+      "meta": "Clients · scheduled Thursday",
+      "status": "green",
+      "done": false,
+      "order": 4
+    }
+  ],
+  "history": []
+}

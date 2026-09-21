@@ -1,0 +1,10 @@
+# Caddy reverse proxy — automatic HTTPS via Let's Encrypt.
+# Replace the domain with your real subdomain, then:
+#   sudo caddy reload --config /etc/caddy/Caddyfile
+#
+# Caddy fetches and renews the TLS certificate automatically. Nothing else to do.
+
+dashboard.albanydata.com {
+    encode gzip
+    reverse_proxy localhost:4300
+}
