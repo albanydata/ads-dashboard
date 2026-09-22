@@ -444,6 +444,8 @@ async function handleApi(req, res, segments, method) {
             status: validateStatus(body.status) || 'green',
             note: body.note || '',
             projectId: body.projectId || '',
+            createdBy: body.createdBy || 'ChatGPT',
+            createdAt: new Date().toISOString(),
           };
           cat.items.push(item);
           record(state, 'item.create', { category: cat.id, id: item.id });
@@ -487,6 +489,8 @@ async function handleApi(req, res, segments, method) {
           categoryId: cat.id,
           categoryLabel: cat.label,
           source: 'category',
+          createdBy: item.createdBy || '',
+          createdAt: item.createdAt || '',
           completedAt: new Date().toISOString(),
         };
         state.completed.unshift(rec);
@@ -592,6 +596,8 @@ async function handleApi(req, res, segments, method) {
         categoryId: '__week__',
         categoryLabel: 'This Week',
         source: 'week',
+        createdBy: task.createdBy || '',
+        createdAt: task.createdAt || '',
         completedAt: new Date().toISOString(),
       };
       state.completed.unshift(rec);
@@ -615,6 +621,8 @@ async function handleApi(req, res, segments, method) {
           projectId: body.projectId || '',
           status: validateStatus(body.status) || 'green',
           done: !!body.done,
+          createdBy: body.createdBy || 'ChatGPT',
+          createdAt: new Date().toISOString(),
           order: body.position === 'top' ? -1 : (body.order != null ? body.order : nextOrder(state.week)),
         };
         state.week.push(task);

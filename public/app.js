@@ -151,6 +151,7 @@ function detailItemsHtml(cat) {
             <div class="detail-main">${escapeHtml(item.text)}</div>
             ${item.note ? `<div class="detail-note">${escapeHtml(item.note)}</div>` : ''}
             ${item.projectId ? `<div class="detail-tags">${projectTagHtml(item.projectId)}</div>` : ''}
+            ${addedMetaHtml(item)}
           </div>
           <div class="detail-actions">
             <button class="mini-btn" data-action="edit" title="Edit task and note">✎</button>
@@ -218,7 +219,7 @@ function saveAddTask(cat, addEl) {
   const projectId = addEl.querySelector('.add-project').value;
   if (!text) { textEl.focus(); return; }
   paused = false;
-  post(`/api/categories/${cat.id}/items`, { text, note, projectId, status: 'green' }).then(() => refresh(true));
+  post(`/api/categories/${cat.id}/items`, { text, note, projectId, status: 'green', createdBy: 'Ben' }).then(() => refresh(true));
 }
 
 function completeItem(cat, itemId) {
@@ -321,6 +322,7 @@ function renderWeek() {
         <div class="week-title">${escapeHtml(task.title)}</div>
         ${task.meta ? `<div class="week-meta">${escapeHtml(task.meta)}</div>` : ''}
         ${task.projectId ? `<div class="week-tag">${projectTagHtml(task.projectId)}</div>` : ''}
+        ${addedMetaHtml(task)}
       </div>
     `;
     // Click a task to open its detail modal (does NOT complete it).
@@ -338,6 +340,7 @@ function openWeekModal(task) {
   document.getElementById('wm-meta').value = task ? (task.meta || '') : '';
   document.getElementById('wm-note').value = task ? (task.note || '') : '';
   document.getElementById('wm-project').innerHTML = projectOptionsHtml(task ? (task.projectId || '') : '');
+  document.getElementById('wm-added').innerHTML = task ? addedMetaHtml(task) : '';
   document.getElementById('wm-complete').style.display = task ? '' : 'none';
   document.getElementById('wm-delete').style.display = task ? '' : 'none';
   renderWeekStatusPicker();
@@ -391,6 +394,19 @@ function projectTagHtml(id) {
   const p = id && projectById(id);
   return p ? `<span class="proj-tag">${escapeHtml(p.name)}</span>` : '';
 }
+function formatWhen(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+function addedMetaHtml(o) {
+  if (!o || (!o.createdBy && !o.createdAt)) return '';
+  const who = o.createdBy ? escapeHtml(o.createdBy) : '—';
+  const when = formatWhen(o.createdAt);
+  return `<div class="added-meta">Added by ${who}${when ? ' · ' + when : ''}</div>`;
+}
+
 function projectOptionsHtml(selectedId) {
   const opts = [`<option value="">— No project —</option>`];
   for (const p of (state.projects || [])) {
@@ -668,7 +684,7 @@ document.getElementById('wm-save').addEventListener('click', () => {
   const body = { title, meta, note, projectId, status: weekModalStatus };
   const req = currentWeekTask
     ? patch(`/api/week/${currentWeekTask.id}`, body)
-    : post('/api/week', body);
+    : post('/api/week', { ...body, createdBy: 'Ben' });
   req.then(closeWeekModal);
 });
 document.getElementById('wm-complete').addEventListener('click', () => {

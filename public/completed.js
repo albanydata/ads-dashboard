@@ -42,7 +42,8 @@ function render(list) {
 
 function itemHtml(t) {
   const time = new Date(t.completedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  const meta = [t.categoryLabel, time].filter(Boolean).join(' · ');
+  const addedBy = t.createdBy ? `added by ${t.createdBy}` : '';
+  const meta = [t.categoryLabel, addedBy, 'completed ' + time].filter(Boolean).join(' · ');
   return `
     <div class="completed-item" data-id="${t.id}">
       <div class="completed-check">✓</div>

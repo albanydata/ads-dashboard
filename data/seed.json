@@ -16,13 +16,17 @@
           "id": "today-1",
           "text": "No meetings scheduled",
           "status": "green",
-          "note": ""
+          "note": "",
+          "createdBy": "Ben",
+          "createdAt": "2026-09-22T09:00:00.000Z"
         },
         {
           "id": "today-2",
           "text": "3 priorities in focus",
           "status": "green",
-          "note": "See Your Focus below"
+          "note": "See Your Focus below",
+          "createdBy": "Ben",
+          "createdAt": "2026-09-22T09:00:00.000Z"
         }
       ]
     },
@@ -37,7 +41,9 @@
           "id": "needs-1",
           "text": "PPA enrollment question awaiting your decision",
           "status": "yellow",
-          "note": "Active enrollment discussion — respond if needed"
+          "note": "Active enrollment discussion — respond if needed",
+          "createdBy": "Ben",
+          "createdAt": "2026-09-22T09:00:00.000Z"
         }
       ]
     },
@@ -52,25 +58,33 @@
           "id": "bmts-1",
           "text": "2 open tasks",
           "status": "green",
-          "note": ""
+          "note": "",
+          "createdBy": "Ben",
+          "createdAt": "2026-09-22T09:00:00.000Z"
         },
         {
           "id": "bmts-2",
           "text": "1 site needs attention",
           "status": "yellow",
-          "note": "Minor content review"
+          "note": "Minor content review",
+          "createdBy": "Ben",
+          "createdAt": "2026-09-22T09:00:00.000Z"
         },
         {
           "id": "bmts-3",
           "text": "1 social connection awaiting approval",
           "status": "yellow",
-          "note": "Facebook page link"
+          "note": "Facebook page link",
+          "createdBy": "Ben",
+          "createdAt": "2026-09-22T09:00:00.000Z"
         },
         {
           "id": "bmts-4",
           "text": "0 critical errors",
           "status": "green",
-          "note": ""
+          "note": "",
+          "createdBy": "Ben",
+          "createdAt": "2026-09-22T09:00:00.000Z"
         }
       ]
     },
@@ -86,7 +100,9 @@
           "text": "New website inquiry needs disposition",
           "status": "yellow",
           "note": "Determine next step",
-          "projectId": "proj-margiasso"
+          "projectId": "proj-margiasso",
+          "createdBy": "ChatGPT",
+          "createdAt": "2026-09-22T09:00:00.000Z"
         }
       ]
     },
@@ -101,7 +117,9 @@
           "id": "ppa-1",
           "text": "1 active enrollment conversation",
           "status": "purple",
-          "note": "In progress — no action required yet"
+          "note": "In progress — no action required yet",
+          "createdBy": "Ben",
+          "createdAt": "2026-09-22T09:00:00.000Z"
         }
       ]
     },
@@ -159,7 +177,9 @@
       "projectId": "proj-bmts",
       "status": "yellow",
       "done": false,
-      "order": 0
+      "order": 0,
+      "createdBy": "Ben",
+      "createdAt": "2026-09-22T09:00:00.000Z"
     },
     {
       "id": "week-2",
@@ -168,7 +188,9 @@
       "note": "Draft is written. Needs pricing section and a final review before it goes to the client.",
       "status": "yellow",
       "done": false,
-      "order": 1
+      "order": 1,
+      "createdBy": "Ben",
+      "createdAt": "2026-09-22T09:00:00.000Z"
     },
     {
       "id": "week-3",
@@ -177,7 +199,9 @@
       "note": "Monitor the active enrollment conversation and respond as needed.",
       "status": "purple",
       "done": false,
-      "order": 2
+      "order": 2,
+      "createdBy": "Ben",
+      "createdAt": "2026-09-22T09:00:00.000Z"
     },
     {
       "id": "week-4",
@@ -186,7 +210,9 @@
       "note": "Weekly pass over the quality alert queue. Nothing critical outstanding.",
       "status": "green",
       "done": false,
-      "order": 3
+      "order": 3,
+      "createdBy": "Ben",
+      "createdAt": "2026-09-22T09:00:00.000Z"
     },
     {
       "id": "week-5",
@@ -195,7 +221,9 @@
       "note": "Monthly touchpoint email to all active clients. Scheduled to go out Thursday.",
       "status": "green",
       "done": false,
-      "order": 4
+      "order": 4,
+      "createdBy": "Ben",
+      "createdAt": "2026-09-22T09:00:00.000Z"
     }
   ],
   "projects": [

@@ -74,6 +74,7 @@ paths:
                   enum: [green, yellow, red, purple]
                 note: { type: string }
                 projectId: { type: string, description: Optional project id this task belongs to }
+                createdBy: { type: string, description: Who is adding this (e.g. "ChatGPT" or a person's name). The server records the time automatically. }
       responses: { '201': { description: Created item } }
   /api/categories/{key}/items/{itemId}:
     patch:
@@ -217,6 +218,7 @@ paths:
                 meta: { type: string, description: 'Small context line, e.g. "BMTS · due Friday"' }
                 note: { type: string, description: Longer details/notes for this weekly task }
                 projectId: { type: string, description: Optional project id this task belongs to }
+                createdBy: { type: string, description: Who is adding this (e.g. "ChatGPT" or a person's name). The server records the time automatically. }
                 status:
                   type: string
                   enum: [green, yellow, red, purple]
