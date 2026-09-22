@@ -45,8 +45,37 @@
           </div>
           <section class="board" id="board" aria-label="Status board"></section>
         </div>
+      </div>
 
-        <!-- Your Focus -->
+      <aside class="col-side">
+        <!-- Combined tabbed card: Current Projects + This Week's Goals -->
+        <section class="week-card" id="right-card">
+          <div class="right-tabs" role="tablist">
+            <button class="right-tab active" data-rt="projects">Current Projects</button>
+            <button class="right-tab" data-rt="goals">This Week's Goals</button>
+          </div>
+
+          <div class="right-panel" data-panel="projects">
+            <div class="projects-columns">
+              <div class="projects-col">
+                <div class="projects-col-head">Immediate</div>
+                <div class="projects-col-list" id="projects-immediate"></div>
+              </div>
+              <div class="projects-col">
+                <div class="projects-col-head">Long-term</div>
+                <div class="projects-col-list" id="projects-longterm"></div>
+              </div>
+            </div>
+            <button class="mini-btn add-task week-add" id="project-add">+ Add project</button>
+          </div>
+
+          <div class="right-panel" data-panel="goals" hidden>
+            <ul class="week-list" id="week-list"></ul>
+            <button class="mini-btn add-task week-add" id="week-add">+ Add goal</button>
+          </div>
+        </section>
+
+        <!-- Your Focus (moved to right column, bottom) -->
         <section class="focus-card" id="focus-card">
           <div class="focus-head">
             <h2>YOUR FOCUS</h2>
@@ -54,37 +83,6 @@
           </div>
           <ol class="focus-list" id="focus-list"></ol>
           <p class="reassurance" id="reassurance"></p>
-        </section>
-      </div>
-
-      <aside class="col-side">
-        <!-- This Week -->
-        <section class="week-card" id="week-card">
-          <div class="week-head">
-            <h2>THIS WEEK</h2>
-            <span class="week-sub">Most important tasks</span>
-          </div>
-          <ul class="week-list" id="week-list"></ul>
-          <button class="mini-btn add-task week-add" id="week-add">+ Add task</button>
-        </section>
-
-        <!-- Current Projects -->
-        <section class="week-card projects-card" id="projects-card">
-          <div class="week-head">
-            <h2>CURRENT PROJECTS</h2>
-            <span class="week-sub">Active work</span>
-          </div>
-          <div class="projects-columns">
-            <div class="projects-col">
-              <div class="projects-col-head">Immediate</div>
-              <div class="projects-col-list" id="projects-immediate"></div>
-            </div>
-            <div class="projects-col">
-              <div class="projects-col-head">Long-term</div>
-              <div class="projects-col-list" id="projects-longterm"></div>
-            </div>
-          </div>
-          <button class="mini-btn add-task week-add" id="project-add">+ Add project</button>
         </section>
       </aside>
     </div>

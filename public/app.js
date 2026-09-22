@@ -15,6 +15,7 @@ const expandedCards = new Set(); // category ids currently folded open
 let viewMode = (() => {
   try { return localStorage.getItem('boardView') || 'categories'; } catch (e) { return 'categories'; }
 })();
+let projectFilter = null; // when set, the board shows only this project's tasks
 let currentWeekTask = null;      // the week task open in the modal (null = new)
 let weekModalStatus = 'green';   // status selected in the modal
 let currentProject = null;       // the project open in the modal (null = new)
@@ -116,8 +117,54 @@ function renderBoard() {
   const board = document.getElementById('board');
   board.innerHTML = '';
   document.querySelectorAll('.board-tab').forEach((t) => t.classList.toggle('active', t.dataset.view === viewMode));
+  if (projectFilter) return renderFilteredBoard(board, projectFilter);
   if (viewMode === 'date') return renderDateBoard(board);
   renderCategoryBoard(board);
+}
+
+function flatRowHtml(it, cat) {
+  return `
+    <div class="detail-item" data-item-id="${it.id}" data-cat="${cat.id}" style="--dotcolor: var(--${it.status}); --dotglow: var(--${it.status}-glow);">
+      <span class="detail-dot"></span>
+      <div class="detail-text">
+        <div class="detail-main">${escapeHtml(it.text)}</div>
+        ${it.note ? `<div class="detail-note">${escapeHtml(it.note)}</div>` : ''}
+        <div class="detail-tags"><span class="cat-tag">${escapeHtml(cat.label)}</span>${it.projectId ? projectTagHtml(it.projectId) : ''}</div>
+        ${addedMetaHtml(it)}
+      </div>
+      <div class="detail-actions">
+        <button class="mini-btn" data-action="edit" title="Edit task and note">✎</button>
+        <button class="mini-btn mini-done" data-action="done" title="Mark done">✓</button>
+      </div>
+    </div>`;
+}
+
+function renderFilteredBoard(board, projectId) {
+  const proj = projectById(projectId);
+  const banner = document.createElement('div');
+  banner.className = 'filter-banner';
+  banner.innerHTML = `<span>Showing tasks for <strong>${escapeHtml(proj ? proj.name : 'project')}</strong></span>
+    <button class="mini-btn" id="clear-filter">✕ Clear filter</button>`;
+  banner.querySelector('#clear-filter').addEventListener('click', () => {
+    projectFilter = null; renderBoard(); renderProjects();
+  });
+  board.appendChild(banner);
+
+  const rows = [];
+  for (const cat of (state.categories || [])) {
+    for (const it of (cat.items || [])) if (it.projectId === projectId) rows.push({ it, cat });
+  }
+  rows.sort((a, b) => new Date(b.it.createdAt || 0) - new Date(a.it.createdAt || 0));
+
+  const wrap = document.createElement('div');
+  wrap.className = 'flat-card';
+  if (!rows.length) {
+    wrap.innerHTML = '<div class="detail-empty">No tasks linked to this project yet.</div>';
+  } else {
+    wrap.innerHTML = rows.map(({ it, cat }) => flatRowHtml(it, cat)).join('');
+    wrap.addEventListener('click', handleFlatClick);
+  }
+  board.appendChild(wrap);
 }
 
 function renderCategoryBoard(board) {
@@ -165,21 +212,7 @@ function renderDateBoard(board) {
     board.appendChild(wrap);
     return;
   }
-  wrap.innerHTML = rows.map(({ it, cat }) => `
-    <div class="detail-item" data-item-id="${it.id}" data-cat="${cat.id}" style="--dotcolor: var(--${it.status}); --dotglow: var(--${it.status}-glow);">
-      <span class="detail-dot"></span>
-      <div class="detail-text">
-        <div class="detail-main">${escapeHtml(it.text)}</div>
-        ${it.note ? `<div class="detail-note">${escapeHtml(it.note)}</div>` : ''}
-        <div class="detail-tags"><span class="cat-tag">${escapeHtml(cat.label)}</span>${it.projectId ? projectTagHtml(it.projectId) : ''}</div>
-        ${addedMetaHtml(it)}
-      </div>
-      <div class="detail-actions">
-        <button class="mini-btn" data-action="edit" title="Edit task and note">✎</button>
-        <button class="mini-btn mini-done" data-action="done" title="Mark done">✓</button>
-      </div>
-    </div>
-  `).join('');
+  wrap.innerHTML = rows.map(({ it, cat }) => flatRowHtml(it, cat)).join('');
   wrap.addEventListener('click', handleFlatClick);
   board.appendChild(wrap);
 }
@@ -366,7 +399,7 @@ function renderWeek() {
   list.innerHTML = '';
   const week = state.week || [];
   if (!week.length) {
-    list.innerHTML = '<li class="week-empty">No tasks for the week.</li>';
+    list.innerHTML = '<li class="week-empty">No goals for the week.</li>';
     return;
   }
   for (const task of week) {
@@ -392,7 +425,7 @@ function renderWeek() {
 function openWeekModal(task) {
   currentWeekTask = task; // null = creating a new one
   weekModalStatus = task ? task.status : 'green';
-  document.getElementById('wm-heading').textContent = task ? 'Weekly task' : 'New weekly task';
+  document.getElementById('wm-heading').textContent = task ? 'Weekly goal' : 'New weekly goal';
   document.getElementById('wm-title').value = task ? task.title : '';
   document.getElementById('wm-meta').value = task ? (task.meta || '') : '';
   document.getElementById('wm-note').value = task ? (task.note || '') : '';
@@ -430,16 +463,14 @@ function closeWeekModal() {
 
 const STATUS_CYCLE = ['green', 'yellow', 'red', 'purple'];
 
-// Count open tasks (category items + weekly tasks) linked to each project.
+// Count open tasks (main-board items) linked to each project. Weekly goals are
+// a separate thing and don't count toward the task badge.
 function projectTaskCounts() {
   const counts = {};
   for (const cat of (state.categories || [])) {
     for (const it of (cat.items || [])) {
       if (it.projectId) counts[it.projectId] = (counts[it.projectId] || 0) + 1;
     }
-  }
-  for (const t of (state.week || [])) {
-    if (t.projectId) counts[t.projectId] = (counts[t.projectId] || 0) + 1;
   }
   return counts;
 }
@@ -484,22 +515,33 @@ function renderProjects() {
     for (const p of list) {
       const n = counts[p.id] || 0;
       const box = document.createElement('div');
-      box.className = 'project-box status-color-' + p.status;
-      box.title = 'Click to open';
+      box.className = 'project-box status-color-' + p.status + (projectFilter === p.id ? ' filtered' : '');
+      box.title = 'Click to filter tasks by this project';
       box.innerHTML = `
-        ${p.logo
-          ? `<img class="project-logo" src="${escapeAttr(p.logo)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'project-dot'}))" />`
-          : '<span class="project-dot"></span>'}
+        <span class="project-logo-wrap">
+          ${p.logo
+            ? `<img class="project-logo" src="${escapeAttr(p.logo)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'project-dot'}))" />`
+            : '<span class="project-dot"></span>'}
+          ${n ? `<span class="project-badge" title="${n} open task${n === 1 ? '' : 's'}">${n}</span>` : ''}
+        </span>
         <span class="project-name">${escapeHtml(p.name)}</span>
-        ${n ? `<span class="project-badge" title="${n} open task${n === 1 ? '' : 's'}">${n}</span>`
-            : '<span class="project-status-dot"></span>'}
+        <button class="proj-edit-btn" data-edit="1" title="Edit project details">✎</button>
       `;
-      box.addEventListener('click', () => openProjectModal(p));
+      box.addEventListener('click', (e) => {
+        if (e.target.closest('[data-edit]')) { openProjectModal(p); return; }
+        setProjectFilter(p.id);
+      });
       el.appendChild(box);
     }
   };
   fill('projects-immediate', 'immediate');
   fill('projects-longterm', 'long-term');
+}
+
+function setProjectFilter(id) {
+  projectFilter = (projectFilter === id) ? null : id; // click again to clear
+  renderBoard();
+  renderProjects();
 }
 
 // ---------- project modal (large) ----------
@@ -730,10 +772,20 @@ document.getElementById('edit-toggle').addEventListener('click', openEditor);
 document.querySelectorAll('.board-tab').forEach((t) => {
   t.addEventListener('click', () => {
     viewMode = t.dataset.view;
+    projectFilter = null; // switching view clears any project filter
     try { localStorage.setItem('boardView', viewMode); } catch (e) { /* ignore */ }
-    if (state) renderBoard();
+    if (state) { renderBoard(); renderProjects(); }
   });
 });
+
+// Right-card tabs (Current Projects / This Week's Goals)
+function setRightTab(t) {
+  document.querySelectorAll('.right-tab').forEach((b) => b.classList.toggle('active', b.dataset.rt === t));
+  document.querySelectorAll('.right-panel').forEach((p) => { p.hidden = p.dataset.panel !== t; });
+  try { localStorage.setItem('rightTab', t); } catch (e) { /* ignore */ }
+}
+document.querySelectorAll('.right-tab').forEach((b) => b.addEventListener('click', () => setRightTab(b.dataset.rt)));
+setRightTab((() => { try { return localStorage.getItem('rightTab') || 'projects'; } catch (e) { return 'projects'; } })());
 
 // Weekly task modal wiring
 document.getElementById('week-add').addEventListener('click', () => openWeekModal(null));

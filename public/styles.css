@@ -160,8 +160,6 @@ body {
   min-width: 0;
 }
 .col-side {
-  position: sticky;
-  top: clamp(20px, 2.4vw, 34px);
   display: flex;
   flex-direction: column;
   gap: clamp(18px, 2vw, 30px);
@@ -485,8 +483,6 @@ body {
 .week-task.done .week-title { text-decoration: line-through; color: var(--text-dim); }
 .week-empty { color: var(--text-faint); font-style: italic; padding: 8px 2px; }
 
-/* +35px taller box, per request */
-#week-card { padding-bottom: calc(clamp(22px, 2.2vw, 32px) + 35px); }
 .week-add { margin-top: 12px; width: 100%; }
 
 /* Weekly task detail modal */
@@ -642,19 +638,79 @@ textarea.wm-input { resize: vertical; }
 }
 .projects-col-list { display: flex; flex-direction: column; gap: 8px; }
 
-/* Red open-task badge on a project box */
+/* Logo wrap + red open-task badge overlaid on the corner */
+.project-logo-wrap { position: relative; flex-shrink: 0; display: inline-flex; }
 .project-badge {
-  min-width: 20px; height: 20px;
-  margin-left: auto;
-  padding: 0 6px;
+  position: absolute;
+  top: -6px; right: -6px;
+  min-width: 18px; height: 18px;
+  padding: 0 5px;
   border-radius: 999px;
   background: var(--red);
   color: #3a0512;
-  font-size: 12px; font-weight: 800;
+  font-size: 11px; font-weight: 800;
   display: grid; place-items: center;
-  box-shadow: 0 0 12px 1px var(--red-glow);
-  flex-shrink: 0;
+  box-shadow: 0 0 10px 1px var(--red-glow);
+  border: 2px solid var(--bg-card);
 }
+.proj-edit-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  opacity: 0.45;
+  flex-shrink: 0;
+  transition: opacity 0.14s ease, color 0.14s ease, background 0.14s ease;
+}
+.project-box:hover .proj-edit-btn { opacity: 1; }
+.proj-edit-btn:hover { color: var(--accent); background: rgba(124, 92, 255, 0.12); }
+.project-box.filtered { border-color: var(--accent); background: rgba(124, 92, 255, 0.12); }
+
+/* Right-card tabs (Current Projects / This Week's Goals) */
+.right-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: clamp(16px, 1.6vw, 22px);
+}
+.right-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: clamp(12px, 1.05vw, 14px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 9px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.right-tab:hover { color: var(--text); }
+.right-tab.active { background: var(--accent-deep); color: #fff; }
+
+/* Filter banner above the board */
+.filter-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  background: rgba(124, 92, 255, 0.12);
+  border: 1px solid var(--border-hi);
+  color: var(--text);
+  font-size: 14px;
+}
+.filter-banner strong { color: var(--accent); }
 
 /* Project link tag on a task */
 .proj-tag {
