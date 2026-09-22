@@ -109,6 +109,7 @@
       "id": "week-1",
       "title": "Complete social platform approvals",
       "meta": "BMTS · due Friday",
+      "note": "Facebook and Instagram submitted. Still need TikTok, Pinterest, and YouTube application/approval work finished.",
       "status": "yellow",
       "done": false,
       "order": 0
@@ -117,6 +118,7 @@
       "id": "week-2",
       "title": "Finalize new ADS website proposal",
       "meta": "ADS · Sales",
+      "note": "Draft is written. Needs pricing section and a final review before it goes to the client.",
       "status": "yellow",
       "done": false,
       "order": 1
@@ -125,6 +127,7 @@
       "id": "week-3",
       "title": "PPA enrollment follow-ups",
       "meta": "PPA · in progress",
+      "note": "Monitor the active enrollment conversation and respond as needed.",
       "status": "purple",
       "done": false,
       "order": 2
@@ -133,6 +136,7 @@
       "id": "week-4",
       "title": "Review BMTS quality alerts",
       "meta": "BMTS · on track",
+      "note": "Weekly pass over the quality alert queue. Nothing critical outstanding.",
       "status": "green",
       "done": false,
       "order": 3
@@ -141,9 +145,84 @@
       "id": "week-5",
       "title": "Send monthly client update emails",
       "meta": "Clients · scheduled Thursday",
+      "note": "Monthly touchpoint email to all active clients. Scheduled to go out Thursday.",
       "status": "green",
       "done": false,
       "order": 4
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-bmts",
+      "name": "Build My Trade Site",
+      "logo": "logos/bmts.svg",
+      "tagline": "Done-for-you websites for trade businesses",
+      "stage": "Live · scaling",
+      "url": "https://buildmytradesite.com",
+      "description": "The flagship product. Add the key details here — current focus, what's next, and anything you want to see at a glance when you open this project.",
+      "status": "purple",
+      "note": "",
+      "order": 0
+    },
+    {
+      "id": "proj-fathom",
+      "name": "Fathom App",
+      "logo": "logos/fathom.svg",
+      "tagline": "Placeholder tagline — edit me",
+      "stage": "In development",
+      "url": "",
+      "description": "Add a description of Fathom App here.",
+      "status": "purple",
+      "note": "",
+      "order": 1
+    },
+    {
+      "id": "proj-gamebuilt",
+      "name": "GameBuilt",
+      "logo": "logos/gamebuilt.svg",
+      "tagline": "Placeholder tagline — edit me",
+      "stage": "In development",
+      "url": "",
+      "description": "Add a description of GameBuilt here.",
+      "status": "purple",
+      "note": "",
+      "order": 2
+    },
+    {
+      "id": "proj-lobbysync",
+      "name": "Lobby Sync",
+      "logo": "logos/lobbysync.svg",
+      "tagline": "Placeholder tagline — edit me",
+      "stage": "Planning",
+      "url": "",
+      "description": "Add a description of Lobby Sync here.",
+      "status": "purple",
+      "note": "",
+      "order": 3
+    },
+    {
+      "id": "proj-travelclub",
+      "name": "Travel Club Software",
+      "logo": "logos/travelclub.svg",
+      "tagline": "Placeholder tagline — edit me",
+      "stage": "In development",
+      "url": "",
+      "description": "Add a description of Travel Club Software here.",
+      "status": "purple",
+      "note": "",
+      "order": 4
+    },
+    {
+      "id": "proj-coinslabx",
+      "name": "CoinSlabX",
+      "logo": "logos/coinslabx.svg",
+      "tagline": "Placeholder tagline — edit me",
+      "stage": "Planning",
+      "url": "",
+      "description": "Add a description of CoinSlabX here.",
+      "status": "purple",
+      "note": "",
+      "order": 5
     }
   ],
   "history": []

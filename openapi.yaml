@@ -8,8 +8,7 @@ info:
     Status is always one of: green, yellow, red, purple.
   version: 1.0.0
 servers:
-  # >>> Replace with your public HTTPS URL (ngrok while testing, your domain in prod).
-  - url: https://YOUR-SUBDOMAIN.ngrok-free.app
+  - url: https://dashboard.albanydatasystems.com
 security:
   - bearerAuth: []
 paths:
@@ -23,19 +22,31 @@ paths:
     get:
       operationId: getCategory
       summary: Read one category by id or label (e.g. "bmts" or "BMTS").
-      parameters: [{ $ref: '#/components/parameters/Key' }]
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Category id or label (case-insensitive), e.g. bmts or "CLIENTS / SALES".
+          schema: { type: string }
       responses: { '200': { description: The category } }
     patch:
       operationId: updateCategory
       summary: Change a category's status, summary, or label.
-      parameters: [{ $ref: '#/components/parameters/Key' }]
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Category id or label (case-insensitive).
+          schema: { type: string }
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                status: { $ref: '#/components/schemas/Status' }
+                status:
+                  type: string
+                  enum: [green, yellow, red, purple]
                 summary: { type: string, description: Short line shown on the card }
                 label: { type: string }
       responses: { '200': { description: Updated category } }
@@ -43,7 +54,12 @@ paths:
     post:
       operationId: addCategoryItem
       summary: Add a detail item revealed when the category card is expanded.
-      parameters: [{ $ref: '#/components/parameters/Key' }]
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Category id or label (case-insensitive).
+          schema: { type: string }
       requestBody:
         required: true
         content:
@@ -53,7 +69,9 @@ paths:
               required: [text]
               properties:
                 text: { type: string }
-                status: { $ref: '#/components/schemas/Status' }
+                status:
+                  type: string
+                  enum: [green, yellow, red, purple]
                 note: { type: string }
       responses: { '201': { description: Created item } }
   /api/categories/{key}/items/{itemId}:
@@ -61,8 +79,16 @@ paths:
       operationId: updateCategoryItem
       summary: Update a category detail item.
       parameters:
-        - { $ref: '#/components/parameters/Key' }
-        - { $ref: '#/components/parameters/ItemId' }
+        - name: key
+          in: path
+          required: true
+          description: Category id or label (case-insensitive).
+          schema: { type: string }
+        - name: itemId
+          in: path
+          required: true
+          description: The item id.
+          schema: { type: string }
       requestBody:
         content:
           application/json:
@@ -70,16 +96,42 @@ paths:
               type: object
               properties:
                 text: { type: string }
-                status: { $ref: '#/components/schemas/Status' }
+                status:
+                  type: string
+                  enum: [green, yellow, red, purple]
                 note: { type: string }
       responses: { '200': { description: Updated item } }
     delete:
       operationId: deleteCategoryItem
       summary: Remove a category detail item.
       parameters:
-        - { $ref: '#/components/parameters/Key' }
-        - { $ref: '#/components/parameters/ItemId' }
+        - name: key
+          in: path
+          required: true
+          description: Category id or label (case-insensitive).
+          schema: { type: string }
+        - name: itemId
+          in: path
+          required: true
+          description: The item id.
+          schema: { type: string }
       responses: { '200': { description: Deleted } }
+  /api/categories/{key}/items/{itemId}/complete:
+    post:
+      operationId: completeCategoryItem
+      summary: Mark a category task done — moves it to the completed archive.
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Category id or label (case-insensitive).
+          schema: { type: string }
+        - name: itemId
+          in: path
+          required: true
+          description: The item id.
+          schema: { type: string }
+      responses: { '200': { description: Archived task } }
   /api/focus:
     get:
       operationId: listFocus
@@ -104,7 +156,12 @@ paths:
     patch:
       operationId: updateFocus
       summary: Edit a priority, or move it to the top with position "top".
-      parameters: [{ $ref: '#/components/parameters/Id' }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The focus item id.
+          schema: { type: string }
       requestBody:
         content:
           application/json:
@@ -118,7 +175,12 @@ paths:
     delete:
       operationId: deleteFocus
       summary: Remove a priority (e.g. it's handled).
-      parameters: [{ $ref: '#/components/parameters/Id' }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The focus item id.
+          schema: { type: string }
       responses: { '200': { description: Deleted } }
   /api/focus/reorder:
     post:
@@ -151,14 +213,22 @@ paths:
               properties:
                 title: { type: string }
                 meta: { type: string, description: 'Small context line, e.g. "BMTS · due Friday"' }
-                status: { $ref: '#/components/schemas/Status' }
+                note: { type: string, description: Longer details/notes for this weekly task }
+                status:
+                  type: string
+                  enum: [green, yellow, red, purple]
                 position: { type: string, enum: [top] }
       responses: { '201': { description: Created task } }
   /api/week/{id}:
     patch:
       operationId: updateWeekTask
-      summary: Update a task, mark it done, change status, or move to top.
-      parameters: [{ $ref: '#/components/parameters/Id' }]
+      summary: Update a weekly task's title, meta, note, or status.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The week task id.
+          schema: { type: string }
       requestBody:
         content:
           application/json:
@@ -167,15 +237,33 @@ paths:
               properties:
                 title: { type: string }
                 meta: { type: string }
-                status: { $ref: '#/components/schemas/Status' }
-                done: { type: boolean }
+                note: { type: string }
+                status:
+                  type: string
+                  enum: [green, yellow, red, purple]
                 position: { type: string, enum: [top] }
       responses: { '200': { description: Updated task } }
     delete:
       operationId: deleteWeekTask
       summary: Remove a This Week task.
-      parameters: [{ $ref: '#/components/parameters/Id' }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The week task id.
+          schema: { type: string }
       responses: { '200': { description: Deleted } }
+  /api/week/{id}/complete:
+    post:
+      operationId: completeWeekTask
+      summary: Mark a weekly task complete — moves it to the completed archive.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The week task id.
+          schema: { type: string }
+      responses: { '200': { description: Archived task } }
   /api/overall:
     patch:
       operationId: setOverall
@@ -190,7 +278,9 @@ paths:
                   type: object
                   nullable: true
                   properties:
-                    status: { $ref: '#/components/schemas/Status' }
+                    status:
+                      type: string
+                      enum: [green, yellow, red, purple]
                     message: { type: string }
       responses: { '200': { description: Overall status } }
   /api/reassurance:
@@ -205,6 +295,99 @@ paths:
               properties:
                 text: { type: string }
       responses: { '200': { description: Updated } }
+  /api/projects:
+    get:
+      operationId: listProjects
+      summary: List the Current Projects boxes.
+      responses: { '200': { description: Project list } }
+    post:
+      operationId: addProject
+      summary: Add a Current Projects box.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                logo: { type: string, description: Path or URL to the project logo image }
+                tagline: { type: string, description: Short one-line summary }
+                stage: { type: string, description: 'e.g. Planning, In development, Live' }
+                url: { type: string, description: Website or link for the project }
+                description: { type: string, description: Longer description of the project }
+                status:
+                  type: string
+                  enum: [green, yellow, red, purple]
+                note: { type: string }
+                position: { type: string, enum: [top] }
+      responses: { '201': { description: Created project } }
+  /api/projects/{id}:
+    patch:
+      operationId: updateProject
+      summary: Update any field of a project (name, tagline, stage, url, description, status, note, logo).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The project id.
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                logo: { type: string }
+                tagline: { type: string }
+                stage: { type: string }
+                url: { type: string }
+                description: { type: string }
+                status:
+                  type: string
+                  enum: [green, yellow, red, purple]
+                note: { type: string }
+                position: { type: string, enum: [top] }
+      responses: { '200': { description: Updated project } }
+    delete:
+      operationId: deleteProject
+      summary: Remove a Current Projects box.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The project id.
+          schema: { type: string }
+      responses: { '200': { description: Deleted } }
+  /api/completed:
+    get:
+      operationId: listCompleted
+      summary: List completed (archived) tasks, newest first.
+      responses: { '200': { description: Completed task list } }
+  /api/completed/{id}/restore:
+    post:
+      operationId: restoreCompleted
+      summary: Restore a completed task back onto its original category.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The completed task id.
+          schema: { type: string }
+      responses: { '200': { description: Restored } }
+  /api/completed/{id}:
+    delete:
+      operationId: deleteCompleted
+      summary: Permanently delete a task from the completed archive.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The completed task id.
+          schema: { type: string }
+      responses: { '200': { description: Deleted } }
   /api/history:
     get:
       operationId: getHistory
@@ -215,23 +398,6 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-  parameters:
-    Key:
-      name: key
-      in: path
-      required: true
-      schema: { type: string }
-      description: Category id or label (case-insensitive), e.g. bmts or "CLIENTS / SALES".
-    Id:
-      name: id
-      in: path
-      required: true
-      schema: { type: string }
-    ItemId:
-      name: itemId
-      in: path
-      required: true
-      schema: { type: string }
   schemas:
     Status:
       type: string

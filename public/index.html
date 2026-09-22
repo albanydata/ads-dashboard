@@ -56,6 +56,17 @@
             <span class="week-sub">Most important tasks</span>
           </div>
           <ul class="week-list" id="week-list"></ul>
+          <button class="mini-btn add-task week-add" id="week-add">+ Add task</button>
+        </section>
+
+        <!-- Current Projects -->
+        <section class="week-card projects-card" id="projects-card">
+          <div class="week-head">
+            <h2>CURRENT PROJECTS</h2>
+            <span class="week-sub">Active work</span>
+          </div>
+          <div class="projects-grid" id="projects-grid"></div>
+          <button class="mini-btn add-task week-add" id="project-add">+ Add project</button>
         </section>
       </aside>
     </div>
@@ -64,19 +75,81 @@
   <!-- Connection / footer -->
   <footer class="footer">
     <span class="conn" id="conn"><span class="conn-dot"></span> Live</span>
-    <button class="edit-toggle" id="edit-toggle" title="Edit dashboard (local dev)">Edit</button>
+    <div class="footer-right">
+      <a class="footer-link" id="completed-link" href="/completed.html">Completed tasks →</a>
+      <button class="edit-toggle" id="edit-toggle" title="Edit dashboard (local dev)">Edit</button>
+    </div>
   </footer>
 
-  <!-- Expanded card detail (modal-ish overlay) -->
-  <div class="overlay" id="overlay" hidden>
-    <div class="panel" id="panel" role="dialog" aria-modal="true">
-      <button class="panel-close" id="panel-close" aria-label="Close">✕</button>
-      <div class="panel-head">
-        <span class="panel-light" id="panel-light"></span>
-        <h2 id="panel-title">Category</h2>
+  <!-- Weekly task detail modal -->
+  <div class="overlay" id="week-modal" hidden>
+    <div class="panel week-modal-panel" role="dialog" aria-modal="true">
+      <button class="panel-close" id="wm-close" aria-label="Close">✕</button>
+      <div class="wm-header">
+        <span class="wm-status-dot" id="wm-status-dot"></span>
+        <h2 id="wm-heading">Task</h2>
       </div>
-      <div class="panel-summary" id="panel-summary"></div>
-      <div class="panel-items" id="panel-items"></div>
+
+      <label class="wm-label">Title</label>
+      <input type="text" id="wm-title" class="wm-input" />
+
+      <label class="wm-label">Context / due</label>
+      <input type="text" id="wm-meta" class="wm-input" placeholder="e.g. BMTS · due Friday" />
+
+      <label class="wm-label">Details &amp; notes</label>
+      <textarea id="wm-note" class="wm-input" rows="4" placeholder="Everything you need to know about this project…"></textarea>
+
+      <label class="wm-label">Status</label>
+      <div class="wm-status-picker" id="wm-status-picker"></div>
+
+      <div class="wm-actions">
+        <button class="btn" id="wm-save">Save</button>
+        <button class="btn wm-complete-btn" id="wm-complete">Complete</button>
+        <button class="btn btn-danger" id="wm-delete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project detail modal (large) -->
+  <div class="overlay" id="project-modal" hidden>
+    <div class="panel project-modal-panel" role="dialog" aria-modal="true">
+      <button class="panel-close" id="pm-close" aria-label="Close">✕</button>
+      <div class="pm-top">
+        <img class="pm-logo" id="pm-logo" alt="" />
+        <div class="pm-headtext">
+          <input type="text" id="pm-name" class="pm-name-input" placeholder="Project name" />
+          <input type="text" id="pm-tagline" class="pm-tagline-input" placeholder="Short tagline…" />
+        </div>
+      </div>
+
+      <div class="pm-row">
+        <div class="pm-field">
+          <label class="wm-label">Status</label>
+          <div class="wm-status-picker" id="pm-status-picker"></div>
+        </div>
+        <div class="pm-field">
+          <label class="wm-label">Stage</label>
+          <input type="text" id="pm-stage" class="wm-input" placeholder="e.g. In development" />
+        </div>
+      </div>
+
+      <label class="wm-label">Website / link</label>
+      <input type="text" id="pm-url" class="wm-input" placeholder="https://…" />
+
+      <label class="wm-label">Description</label>
+      <textarea id="pm-description" class="wm-input" rows="5" placeholder="What this project is, current focus, what's next…"></textarea>
+
+      <label class="wm-label">Internal notes</label>
+      <textarea id="pm-note" class="wm-input" rows="3" placeholder="Private notes…"></textarea>
+
+      <label class="wm-label">Logo path or URL</label>
+      <input type="text" id="pm-logo-input" class="wm-input" placeholder="logos/yourlogo.svg or https://…" />
+
+      <div class="wm-actions">
+        <button class="btn" id="pm-save">Save</button>
+        <a class="btn btn-ghost" id="pm-open" target="_blank" rel="noopener">Open site ↗</a>
+        <button class="btn btn-danger" id="pm-delete">Delete</button>
+      </div>
     </div>
   </div>
 
@@ -121,6 +194,15 @@
           <input type="text" id="new-week-title" placeholder="New task title…" />
           <input type="text" id="new-week-meta" placeholder="Meta (e.g. BMTS · due Friday)…" />
           <button id="add-week" class="btn">Add</button>
+        </div>
+      </div>
+
+      <div class="editor-section">
+        <h3>Current Projects</h3>
+        <div id="editor-projects" class="editor-focus"></div>
+        <div class="editor-add">
+          <input type="text" id="new-project-name" placeholder="New project name…" />
+          <button id="add-project" class="btn">Add</button>
         </div>
       </div>
 

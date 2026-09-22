@@ -9,6 +9,13 @@ const REFRESH_MS = 5000;
 
 let state = null;
 let lastGood = 0;
+let paused = false;      // true while inline-editing, so refresh won't wipe the form
+let lastSig = '';        // signature of last rendered state (skip needless re-renders)
+const expandedCards = new Set(); // category ids currently folded open
+let currentWeekTask = null;      // the week task open in the modal (null = new)
+let weekModalStatus = 'green';   // status selected in the modal
+let currentProject = null;       // the project open in the modal (null = new)
+let projectModalStatus = 'purple';
 
 // ---------- clock (updates locally every second) ----------
 function tick() {
@@ -26,7 +33,8 @@ setInterval(tick, 1000);
 tick();
 
 // ---------- fetch + render loop ----------
-async function refresh() {
+async function refresh(force) {
+  if (paused && !force) return; // don't rebuild the DOM under an open edit form
   try {
     const res = await fetch('/api/state', { cache: 'no-store' });
     if (res.status === 401) {
@@ -36,10 +44,16 @@ async function refresh() {
     }
     if (!res.ok) throw new Error('bad response');
     hide('lock');
-    state = await res.json();
+    const data = await res.json();
     lastGood = Date.now();
-    render();
     setConn(true);
+    // Only re-render when something actually changed, so expanded cards and
+    // hovered controls don't flicker every 5 seconds.
+    const sig = JSON.stringify(data);
+    if (sig === lastSig && !force) return;
+    lastSig = sig;
+    state = data;
+    render();
   } catch (e) {
     setConn(false);
   }
@@ -87,7 +101,11 @@ function render() {
   renderBoard();
   renderFocus();
   renderWeek();
+  renderProjects();
   document.getElementById('reassurance').textContent = state.reassurance || '';
+  const n = state.completedCount || 0;
+  document.getElementById('completed-link').textContent =
+    n ? `Completed tasks (${n}) →` : 'Completed tasks →';
 }
 
 function renderBoard() {
@@ -95,25 +113,165 @@ function renderBoard() {
   board.innerHTML = '';
   for (const cat of state.categories) {
     const attention = cat.status === 'yellow' || cat.status === 'red';
+    const isOpen = expandedCards.has(cat.id);
     const card = document.createElement('div');
-    card.className = `card status-color-${cat.status}` + (attention ? ' attention' : '');
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', `${cat.label}: ${cat.summary}`);
+    card.className = `card status-color-${cat.status}` + (attention ? ' attention' : '') + (isOpen ? ' expanded' : '');
 
     const itemCount = cat.items ? cat.items.length : 0;
     card.innerHTML = `
-      <span class="card-light"></span>
-      <span class="card-label">${escapeHtml(cat.label)}</span>
-      <span class="card-summary">${escapeHtml(cat.summary || '')}</span>
-      ${itemCount ? `<span class="card-count">${itemCount} ${itemCount === 1 ? 'detail' : 'details'}</span>` : ''}
-      <span class="card-chevron">›</span>
+      <div class="card-row" role="button" tabindex="0" aria-expanded="${isOpen}" aria-label="${escapeAttr(cat.label + ': ' + (cat.summary || ''))}">
+        <span class="card-light"></span>
+        <span class="card-label">${escapeHtml(cat.label)}</span>
+        <span class="card-summary">${escapeHtml(cat.summary || '')}</span>
+        ${itemCount ? `<span class="card-count">${itemCount} ${itemCount === 1 ? 'detail' : 'details'}</span>` : ''}
+        <span class="card-chevron">›</span>
+      </div>
+      <div class="card-detail"><div class="card-detail-inner">${detailItemsHtml(cat)}</div></div>
     `;
-    card.addEventListener('click', () => openPanel(cat));
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPanel(cat); }
+    const row = card.querySelector('.card-row');
+    const toggle = () => toggleCard(cat.id, card);
+    row.addEventListener('click', toggle);
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
     });
+    // Wire the task actions (edit / save / cancel / done) inside the fold-out.
+    card.querySelector('.card-detail').addEventListener('click', (e) => handleDetailClick(e, cat));
     board.appendChild(card);
+  }
+}
+
+function detailItemsHtml(cat) {
+  const items = cat.items || [];
+  const rows = items.length
+    ? items.map((item) => `
+        <div class="detail-item" data-item-id="${item.id}" style="--dotcolor: var(--${item.status}); --dotglow: var(--${item.status}-glow);">
+          <span class="detail-dot"></span>
+          <div class="detail-text">
+            <div class="detail-main">${escapeHtml(item.text)}</div>
+            ${item.note ? `<div class="detail-note">${escapeHtml(item.note)}</div>` : ''}
+          </div>
+          <div class="detail-actions">
+            <button class="mini-btn" data-action="edit" title="Edit task and note">✎</button>
+            <button class="mini-btn mini-done" data-action="done" title="Mark done">✓</button>
+          </div>
+        </div>`).join('')
+    : '<div class="detail-empty">Nothing here — this category is clear.</div>';
+  return rows + `
+    <div class="detail-add">
+      <button class="mini-btn add-task" data-action="add-task">+ Add task</button>
+    </div>
+  `;
+}
+
+function handleDetailClick(e, cat) {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  // Add-task actions live outside any .detail-item.
+  if (action === 'add-task') return enterAddTask(cat, btn.closest('.detail-add'));
+  if (action === 'add-save') return saveAddTask(cat, btn.closest('.detail-add'));
+  if (action === 'add-cancel') { paused = false; return refresh(true); }
+
+  const itemEl = btn.closest('.detail-item');
+  if (!itemEl) return;
+  const itemId = itemEl.dataset.itemId;
+  if (action === 'done') completeItem(cat, itemId);
+  else if (action === 'edit') enterItemEdit(cat, itemId, itemEl);
+  else if (action === 'save') saveItemEdit(cat, itemId, itemEl);
+  else if (action === 'cancel') { paused = false; refresh(true); }
+}
+
+function enterAddTask(cat, addEl) {
+  paused = true;
+  addEl.classList.add('adding');
+  addEl.innerHTML = `
+    <input class="add-text edit-text" type="text" placeholder="New task…" />
+    <textarea class="add-note edit-note" rows="2" placeholder="Note (optional)…"></textarea>
+    <div class="edit-actions">
+      <button class="mini-btn save" data-action="add-save">Add</button>
+      <button class="mini-btn" data-action="add-cancel">Cancel</button>
+    </div>
+  `;
+  const text = addEl.querySelector('.add-text');
+  addEl.querySelectorAll('.add-text, .add-note').forEach((el) => {
+    el.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' && el.classList.contains('add-text')) {
+        ev.preventDefault();
+        saveAddTask(cat, addEl);
+      } else if (ev.key === 'Escape') {
+        ev.stopPropagation();
+        paused = false;
+        refresh(true);
+      }
+    });
+  });
+  text.focus();
+}
+
+function saveAddTask(cat, addEl) {
+  const textEl = addEl.querySelector('.add-text');
+  const text = textEl.value.trim();
+  const note = addEl.querySelector('.add-note').value.trim();
+  if (!text) { textEl.focus(); return; }
+  paused = false;
+  post(`/api/categories/${cat.id}/items`, { text, note, status: 'green' }).then(() => refresh(true));
+}
+
+function completeItem(cat, itemId) {
+  post(`/api/categories/${cat.id}/items/${itemId}/complete`, {}).then(() => refresh(true));
+}
+
+function enterItemEdit(cat, itemId, itemEl) {
+  const item = (cat.items || []).find((i) => i.id === itemId);
+  if (!item) return;
+  paused = true; // freeze auto-refresh so the form isn't rebuilt under us
+  itemEl.classList.add('editing');
+  itemEl.innerHTML = `
+    <span class="detail-dot"></span>
+    <div class="detail-text">
+      <input class="edit-text" type="text" value="${escapeAttr(item.text)}" />
+      <textarea class="edit-note" rows="2" placeholder="Add a note…">${escapeHtml(item.note || '')}</textarea>
+      <div class="edit-actions">
+        <button class="mini-btn save" data-action="save">Save</button>
+        <button class="mini-btn" data-action="cancel">Cancel</button>
+      </div>
+    </div>
+  `;
+  const text = itemEl.querySelector('.edit-text');
+  itemEl.querySelectorAll('.edit-text, .edit-note').forEach((el) => {
+    el.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' && el.classList.contains('edit-text')) {
+        ev.preventDefault();
+        saveItemEdit(cat, itemId, itemEl);
+      } else if (ev.key === 'Escape') {
+        ev.stopPropagation();
+        paused = false;
+        refresh(true);
+      }
+    });
+  });
+  text.focus();
+  text.setSelectionRange(text.value.length, text.value.length);
+}
+
+function saveItemEdit(cat, itemId, itemEl) {
+  const textEl = itemEl.querySelector('.edit-text');
+  const text = textEl.value.trim();
+  const note = itemEl.querySelector('.edit-note').value.trim();
+  if (!text) { textEl.focus(); return; }
+  paused = false;
+  patch(`/api/categories/${cat.id}/items/${itemId}`, { text, note }).then(() => refresh(true));
+}
+
+function toggleCard(id, card) {
+  if (expandedCards.has(id)) {
+    expandedCards.delete(id);
+    card.classList.remove('expanded');
+    card.querySelector('.card-row').setAttribute('aria-expanded', 'false');
+  } else {
+    expandedCards.add(id);
+    card.classList.add('expanded');
+    card.querySelector('.card-row').setAttribute('aria-expanded', 'true');
   }
 }
 
@@ -149,8 +307,8 @@ function renderWeek() {
   }
   for (const task of week) {
     const li = document.createElement('li');
-    li.className = 'week-task status-color-' + task.status + (task.done ? ' done' : '');
-    li.title = task.done ? 'Click to mark not done' : 'Click to mark complete';
+    li.className = 'week-task status-color-' + task.status;
+    li.title = 'Click to open';
     li.innerHTML = `
       <span class="week-dot"></span>
       <div class="week-text">
@@ -158,44 +316,123 @@ function renderWeek() {
         ${task.meta ? `<div class="week-meta">${escapeHtml(task.meta)}</div>` : ''}
       </div>
     `;
-    // Click a task to toggle completion (uses the same API an AI would).
-    li.addEventListener('click', () => {
-      patch(`/api/week/${task.id}`, { done: !task.done }).then(() => refresh());
-    });
+    // Click a task to open its detail modal (does NOT complete it).
+    li.addEventListener('click', () => openWeekModal(task));
     list.appendChild(li);
   }
 }
 
-// ---------- expand panel ----------
-function openPanel(cat) {
-  document.getElementById('panel-title').textContent = cat.label;
-  document.getElementById('panel-summary').textContent = cat.summary || '';
-  const light = document.getElementById('panel-light');
-  light.style.setProperty('--dotcolor', `var(--${cat.status})`);
-  light.style.setProperty('--dotglow', `var(--${cat.status}-glow)`);
+// ---------- weekly task modal ----------
+function openWeekModal(task) {
+  currentWeekTask = task; // null = creating a new one
+  weekModalStatus = task ? task.status : 'green';
+  document.getElementById('wm-heading').textContent = task ? 'Weekly task' : 'New weekly task';
+  document.getElementById('wm-title').value = task ? task.title : '';
+  document.getElementById('wm-meta').value = task ? (task.meta || '') : '';
+  document.getElementById('wm-note').value = task ? (task.note || '') : '';
+  document.getElementById('wm-complete').style.display = task ? '' : 'none';
+  document.getElementById('wm-delete').style.display = task ? '' : 'none';
+  renderWeekStatusPicker();
+  paused = true; // don't let auto-refresh rebuild while the modal is open
+  show('week-modal');
+  document.getElementById('wm-title').focus();
+}
 
-  const container = document.getElementById('panel-items');
-  container.innerHTML = '';
-  const items = cat.items || [];
-  if (!items.length) {
-    container.innerHTML = '<div class="detail-empty">Nothing to show — this category is clear.</div>';
-  } else {
-    for (const item of items) {
-      const row = document.createElement('div');
-      row.className = 'detail-item';
-      row.style.setProperty('--dotcolor', `var(--${item.status})`);
-      row.style.setProperty('--dotglow', `var(--${item.status}-glow)`);
-      row.innerHTML = `
-        <span class="detail-dot"></span>
-        <div class="detail-text">
-          <div class="detail-main">${escapeHtml(item.text)}</div>
-          ${item.note ? `<div class="detail-note">${escapeHtml(item.note)}</div>` : ''}
-        </div>
-      `;
-      container.appendChild(row);
-    }
+function renderWeekStatusPicker() {
+  const picker = document.getElementById('wm-status-picker');
+  picker.innerHTML = ['green', 'yellow', 'red', 'purple'].map((s) =>
+    `<span class="status-swatch ${s} ${weekModalStatus === s ? 'active' : ''}" data-status="${s}" title="${s}"></span>`
+  ).join('');
+  picker.querySelectorAll('.status-swatch').forEach((sw) =>
+    sw.addEventListener('click', () => {
+      weekModalStatus = sw.dataset.status;
+      renderWeekStatusPicker();
+    })
+  );
+  const dot = document.getElementById('wm-status-dot');
+  dot.style.setProperty('--dotcolor', `var(--${weekModalStatus})`);
+  dot.style.setProperty('--dotglow', `var(--${weekModalStatus}-glow)`);
+}
+
+function closeWeekModal() {
+  paused = false;
+  hide('week-modal');
+  refresh(true);
+}
+
+const STATUS_CYCLE = ['green', 'yellow', 'red', 'purple'];
+
+function renderProjects() {
+  const grid = document.getElementById('projects-grid');
+  grid.innerHTML = '';
+  const projects = state.projects || [];
+  if (!projects.length) {
+    grid.innerHTML = '<div class="project-empty">No active projects.</div>';
+    return;
   }
-  show('overlay');
+  for (const p of projects) {
+    const box = document.createElement('div');
+    box.className = 'project-box status-color-' + p.status;
+    box.title = 'Click to open';
+    box.innerHTML = `
+      ${p.logo
+        ? `<img class="project-logo" src="${escapeAttr(p.logo)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'project-dot'}))" />`
+        : '<span class="project-dot"></span>'}
+      <span class="project-name">${escapeHtml(p.name)}</span>
+      <span class="project-status-dot"></span>
+    `;
+    box.addEventListener('click', () => openProjectModal(p));
+    grid.appendChild(box);
+  }
+}
+
+// ---------- project modal (large) ----------
+function openProjectModal(project) {
+  currentProject = project;
+  projectModalStatus = project ? project.status : 'purple';
+  const val = (id, v) => { document.getElementById(id).value = v; };
+  document.getElementById('pm-heading') && (document.getElementById('pm-heading').textContent = '');
+  val('pm-name', project ? project.name : '');
+  val('pm-tagline', project ? (project.tagline || '') : '');
+  val('pm-stage', project ? (project.stage || '') : '');
+  val('pm-url', project ? (project.url || '') : '');
+  val('pm-description', project ? (project.description || '') : '');
+  val('pm-note', project ? (project.note || '') : '');
+  val('pm-logo-input', project ? (project.logo || '') : '');
+  updateProjectLogoPreview(project ? project.logo : '');
+  renderProjectStatusPicker();
+  const open = document.getElementById('pm-open');
+  if (project && project.url) { open.href = project.url; open.style.display = ''; }
+  else open.style.display = 'none';
+  document.getElementById('pm-delete').style.display = project ? '' : 'none';
+  paused = true;
+  show('project-modal');
+  document.getElementById('pm-name').focus();
+}
+
+function updateProjectLogoPreview(logo) {
+  const img = document.getElementById('pm-logo');
+  if (logo) { img.src = logo; img.style.display = ''; }
+  else img.style.display = 'none';
+}
+
+function renderProjectStatusPicker() {
+  const picker = document.getElementById('pm-status-picker');
+  picker.innerHTML = ['green', 'yellow', 'red', 'purple'].map((s) =>
+    `<span class="status-swatch ${s} ${projectModalStatus === s ? 'active' : ''}" data-status="${s}" title="${s}"></span>`
+  ).join('');
+  picker.querySelectorAll('.status-swatch').forEach((sw) =>
+    sw.addEventListener('click', () => {
+      projectModalStatus = sw.dataset.status;
+      renderProjectStatusPicker();
+    })
+  );
+}
+
+function closeProjectModal() {
+  paused = false;
+  hide('project-modal');
+  refresh(true);
 }
 
 // ---------- editor (local dev) ----------
@@ -286,6 +523,33 @@ function renderEditor() {
     b.addEventListener('click', () => del(`/api/week/${b.dataset.weekDel}`).then(afterEdit))
   );
 
+  // Current Projects
+  const projBox = document.getElementById('editor-projects');
+  projBox.innerHTML = '';
+  (state.projects || []).forEach((p) => {
+    const row = document.createElement('div');
+    row.className = 'editor-focus-row';
+    const picker = ['green', 'yellow', 'red', 'purple'].map((s) =>
+      `<span class="status-swatch ${s} ${p.status === s ? 'active' : ''}" data-proj="${p.id}" data-status="${s}" title="${s}"></span>`
+    ).join('');
+    row.innerHTML = `
+      <span class="ef-title">${escapeHtml(p.name)}</span>
+      <span class="status-picker">${picker}</span>
+      <span class="ef-btns">
+        <button class="btn btn-danger" data-proj-del="${p.id}">Remove</button>
+      </span>
+    `;
+    projBox.appendChild(row);
+  });
+  projBox.querySelectorAll('.status-swatch[data-proj]').forEach((sw) =>
+    sw.addEventListener('click', () =>
+      patch(`/api/projects/${sw.dataset.proj}`, { status: sw.dataset.status }).then(afterEdit)
+    )
+  );
+  projBox.querySelectorAll('[data-proj-del]').forEach((b) =>
+    b.addEventListener('click', () => del(`/api/projects/${b.dataset.projDel}`).then(afterEdit))
+  );
+
   document.getElementById('reassurance-input').value = state.reassurance || '';
 }
 
@@ -316,19 +580,87 @@ async function del(url) {
 function show(id) { document.getElementById(id).hidden = false; }
 function hide(id) { document.getElementById(id).hidden = true; }
 
-document.getElementById('panel-close').addEventListener('click', () => hide('overlay'));
-document.getElementById('overlay').addEventListener('click', (e) => {
-  if (e.target.id === 'overlay') hide('overlay');
-});
 document.getElementById('editor-close').addEventListener('click', () => hide('editor'));
 document.getElementById('editor').addEventListener('click', (e) => {
   if (e.target.id === 'editor') hide('editor');
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { hide('overlay'); hide('editor'); }
+  if (e.key === 'Escape') {
+    if (!document.getElementById('week-modal').hidden) { closeWeekModal(); return; }
+    if (!document.getElementById('project-modal').hidden) { closeProjectModal(); return; }
+    hide('editor');
+    // Collapse any folded-open cards.
+    if (expandedCards.size) {
+      expandedCards.clear();
+      document.querySelectorAll('.card.expanded').forEach((c) => {
+        c.classList.remove('expanded');
+        c.querySelector('.card-row').setAttribute('aria-expanded', 'false');
+      });
+    }
+  }
 });
 
 document.getElementById('edit-toggle').addEventListener('click', openEditor);
+
+// Weekly task modal wiring
+document.getElementById('week-add').addEventListener('click', () => openWeekModal(null));
+document.getElementById('wm-close').addEventListener('click', closeWeekModal);
+document.getElementById('week-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'week-modal') closeWeekModal();
+});
+document.getElementById('wm-save').addEventListener('click', () => {
+  const title = document.getElementById('wm-title').value.trim();
+  const meta = document.getElementById('wm-meta').value.trim();
+  const note = document.getElementById('wm-note').value.trim();
+  if (!title) { document.getElementById('wm-title').focus(); return; }
+  const body = { title, meta, note, status: weekModalStatus };
+  const req = currentWeekTask
+    ? patch(`/api/week/${currentWeekTask.id}`, body)
+    : post('/api/week', body);
+  req.then(closeWeekModal);
+});
+document.getElementById('wm-complete').addEventListener('click', () => {
+  if (!currentWeekTask) return;
+  post(`/api/week/${currentWeekTask.id}/complete`, {}).then(closeWeekModal);
+});
+document.getElementById('wm-delete').addEventListener('click', () => {
+  if (!currentWeekTask) return;
+  if (confirm('Delete this weekly task?')) {
+    del(`/api/week/${currentWeekTask.id}`).then(closeWeekModal);
+  }
+});
+
+// Project modal wiring
+document.getElementById('project-add').addEventListener('click', () => openProjectModal(null));
+document.getElementById('pm-close').addEventListener('click', closeProjectModal);
+document.getElementById('project-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'project-modal') closeProjectModal();
+});
+document.getElementById('pm-logo-input').addEventListener('input', (e) => updateProjectLogoPreview(e.target.value.trim()));
+document.getElementById('pm-save').addEventListener('click', () => {
+  const name = document.getElementById('pm-name').value.trim();
+  if (!name) { document.getElementById('pm-name').focus(); return; }
+  const body = {
+    name,
+    tagline: document.getElementById('pm-tagline').value.trim(),
+    stage: document.getElementById('pm-stage').value.trim(),
+    url: document.getElementById('pm-url').value.trim(),
+    description: document.getElementById('pm-description').value.trim(),
+    note: document.getElementById('pm-note').value.trim(),
+    logo: document.getElementById('pm-logo-input').value.trim(),
+    status: projectModalStatus,
+  };
+  const req = currentProject
+    ? patch(`/api/projects/${currentProject.id}`, body)
+    : post('/api/projects', body);
+  req.then(closeProjectModal);
+});
+document.getElementById('pm-delete').addEventListener('click', () => {
+  if (!currentProject) return;
+  if (confirm('Delete this project?')) {
+    del(`/api/projects/${currentProject.id}`).then(closeProjectModal);
+  }
+});
 
 document.getElementById('add-focus').addEventListener('click', () => {
   const title = document.getElementById('new-focus-title').value.trim();
@@ -348,6 +680,15 @@ document.getElementById('add-week').addEventListener('click', () => {
   post('/api/week', { title, meta, status: 'green' }).then(() => {
     document.getElementById('new-week-title').value = '';
     document.getElementById('new-week-meta').value = '';
+    afterEdit();
+  });
+});
+
+document.getElementById('add-project').addEventListener('click', () => {
+  const name = document.getElementById('new-project-name').value.trim();
+  if (!name) return;
+  post('/api/projects', { name }).then(() => {
+    document.getElementById('new-project-name').value = '';
     afterEdit();
   });
 });

@@ -78,6 +78,8 @@ function normalizeShape(state) {
   state.categories = state.categories || [];
   state.focus = state.focus || [];
   state.week = state.week || [];
+  state.projects = state.projects || [];
+  state.completed = state.completed || [];
   state.history = state.history || [];
   state.overall = state.overall || { override: null };
   return state;
@@ -144,6 +146,7 @@ function publicState(state) {
   const categories = [...state.categories].sort((a, b) => a.order - b.order);
   const focus = [...state.focus].sort((a, b) => a.order - b.order);
   const week = [...state.week].sort((a, b) => a.order - b.order);
+  const projects = [...state.projects].sort((a, b) => a.order - b.order);
   return {
     org: state.org,
     serverTime: new Date().toISOString(),
@@ -152,6 +155,8 @@ function publicState(state) {
     categories,
     focus,
     week,
+    projects,
+    completedCount: state.completed.length,
   };
 }
 
@@ -443,6 +448,27 @@ async function handleApi(req, res, segments, method) {
           return sendJson(res, 200, { deleted: item.id });
         }
       }
+
+      // /api/categories/:key/items/:itemId/complete  — archive to the bucket
+      if (segments.length === 5 && segments[4] === 'complete' && method === 'POST') {
+        const item = cat.items.find((i) => i.id === segments[3]);
+        if (!item) return sendJson(res, 404, { error: `No item "${segments[3]}"` });
+        cat.items = cat.items.filter((i) => i !== item);
+        const rec = {
+          id: item.id,
+          text: item.text,
+          note: item.note || '',
+          status: item.status,
+          categoryId: cat.id,
+          categoryLabel: cat.label,
+          source: 'category',
+          completedAt: new Date().toISOString(),
+        };
+        state.completed.unshift(rec);
+        record(state, 'item.complete', { category: cat.id, id: item.id });
+        saveState(state);
+        return sendJson(res, 200, rec);
+      }
     }
 
     return sendJson(res, 405, { error: 'Unsupported categories route/method' });
@@ -526,6 +552,29 @@ async function handleApi(req, res, segments, method) {
       return sendJson(res, 200, { week: [...state.week].sort((a, b) => a.order - b.order) });
     }
 
+    // /api/week/:id/complete  — archive a weekly task to the completed bucket
+    if (segments.length === 3 && segments[2] === 'complete' && method === 'POST') {
+      const task = state.week.find((t) => t.id === segments[1]);
+      if (!task) return sendJson(res, 404, { error: `No week task "${segments[1]}"` });
+      state.week = state.week.filter((t) => t !== task);
+      normalizeWeekOrder(state);
+      const rec = {
+        id: task.id,
+        text: task.title,
+        note: task.note || '',
+        meta: task.meta || '',
+        status: task.status,
+        categoryId: '__week__',
+        categoryLabel: 'This Week',
+        source: 'week',
+        completedAt: new Date().toISOString(),
+      };
+      state.completed.unshift(rec);
+      record(state, 'week.complete', { id: task.id });
+      saveState(state);
+      return sendJson(res, 200, rec);
+    }
+
     // /api/week
     if (segments.length === 1) {
       if (method === 'GET') {
@@ -537,6 +586,7 @@ async function handleApi(req, res, segments, method) {
           id: body.id || `week-${randomUUID().slice(0, 8)}`,
           title: body.title,
           meta: body.meta || '',
+          note: body.note || '',
           status: validateStatus(body.status) || 'green',
           done: !!body.done,
           order: body.position === 'top' ? -1 : (body.order != null ? body.order : nextOrder(state.week)),
@@ -557,6 +607,7 @@ async function handleApi(req, res, segments, method) {
       if (method === 'PATCH') {
         if (body.title !== undefined) task.title = body.title;
         if (body.meta !== undefined) task.meta = body.meta;
+        if (body.note !== undefined) task.note = body.note;
         if (body.status !== undefined) task.status = validateStatus(body.status);
         if (body.done !== undefined) task.done = !!body.done;
         if (body.position === 'top') task.order = -1;
@@ -578,12 +629,142 @@ async function handleApi(req, res, segments, method) {
     return sendJson(res, 405, { error: 'Unsupported week route/method' });
   }
 
+  // ---- /api/projects --------------------------------------------------------
+  // The "Current Projects" boxes shown in the right column.
+  if (segments[0] === 'projects') {
+    // /api/projects/reorder
+    if (segments.length === 2 && segments[1] === 'reorder' && method === 'POST') {
+      const order = body.order || [];
+      order.forEach((id, index) => {
+        const p = state.projects.find((x) => x.id === id);
+        if (p) p.order = index;
+      });
+      record(state, 'project.reorder', { order });
+      saveState(state);
+      return sendJson(res, 200, { projects: [...state.projects].sort((a, b) => a.order - b.order) });
+    }
+
+    // /api/projects
+    if (segments.length === 1) {
+      if (method === 'GET') {
+        return sendJson(res, 200, { projects: [...state.projects].sort((a, b) => a.order - b.order) });
+      }
+      if (method === 'POST') {
+        if (!body.name) return sendJson(res, 400, { error: 'name is required' });
+        const project = {
+          id: body.id || `proj-${randomUUID().slice(0, 8)}`,
+          name: body.name,
+          logo: body.logo || '',
+          tagline: body.tagline || '',
+          stage: body.stage || '',
+          url: body.url || '',
+          description: body.description || '',
+          status: validateStatus(body.status) || 'purple',
+          note: body.note || '',
+          order: body.position === 'top' ? -1 : (body.order != null ? body.order : nextOrder(state.projects)),
+        };
+        state.projects.push(project);
+        normalizeProjectsOrder(state);
+        record(state, 'project.create', { id: project.id, name: project.name });
+        saveState(state);
+        return sendJson(res, 201, project);
+      }
+    }
+
+    // /api/projects/:id
+    if (segments.length === 2) {
+      const project = state.projects.find((p) => p.id === segments[1]);
+      if (!project) return sendJson(res, 404, { error: `No project "${segments[1]}"` });
+      if (method === 'GET') return sendJson(res, 200, project);
+      if (method === 'PATCH') {
+        if (body.name !== undefined) project.name = body.name;
+        if (body.logo !== undefined) project.logo = body.logo;
+        if (body.tagline !== undefined) project.tagline = body.tagline;
+        if (body.stage !== undefined) project.stage = body.stage;
+        if (body.url !== undefined) project.url = body.url;
+        if (body.description !== undefined) project.description = body.description;
+        if (body.status !== undefined) project.status = validateStatus(body.status);
+        if (body.note !== undefined) project.note = body.note;
+        if (body.position === 'top') project.order = -1;
+        else if (body.order !== undefined) project.order = body.order;
+        normalizeProjectsOrder(state);
+        record(state, 'project.update', { id: project.id, changes: body });
+        saveState(state);
+        return sendJson(res, 200, project);
+      }
+      if (method === 'DELETE') {
+        state.projects = state.projects.filter((p) => p !== project);
+        normalizeProjectsOrder(state);
+        record(state, 'project.delete', { id: project.id });
+        saveState(state);
+        return sendJson(res, 200, { deleted: project.id });
+      }
+    }
+
+    return sendJson(res, 405, { error: 'Unsupported projects route/method' });
+  }
+
+  // ---- /api/completed -------------------------------------------------------
+  // The archive of finished tasks (the "holding bucket").
+  if (segments[0] === 'completed') {
+    // /api/completed
+    if (segments.length === 1 && method === 'GET') {
+      return sendJson(res, 200, { completed: state.completed });
+    }
+
+    // /api/completed/:id/restore  — put it back on its original category
+    if (segments.length === 3 && segments[2] === 'restore' && method === 'POST') {
+      const rec = state.completed.find((c) => c.id === segments[1]);
+      if (!rec) return sendJson(res, 404, { error: `No completed task "${segments[1]}"` });
+      state.completed = state.completed.filter((c) => c !== rec);
+      if (rec.source === 'week') {
+        state.week.push({
+          id: rec.id,
+          title: rec.text,
+          meta: rec.meta || '',
+          note: rec.note || '',
+          status: rec.status || 'green',
+          done: false,
+          order: nextOrder(state.week),
+        });
+        normalizeWeekOrder(state);
+        record(state, 'week.restore', { id: rec.id });
+        saveState(state);
+        return sendJson(res, 200, { restored: rec.id, into: 'week' });
+      }
+      let cat = findCategory(state, rec.categoryId) || state.categories[0];
+      if (cat) {
+        cat.items.push({ id: rec.id, text: rec.text, status: rec.status || 'green', note: rec.note || '' });
+      }
+      record(state, 'item.restore', { id: rec.id, category: cat ? cat.id : null });
+      saveState(state);
+      return sendJson(res, 200, { restored: rec.id, category: cat ? cat.id : null });
+    }
+
+    // /api/completed/:id  — permanently remove from the archive
+    if (segments.length === 2 && method === 'DELETE') {
+      const rec = state.completed.find((c) => c.id === segments[1]);
+      if (!rec) return sendJson(res, 404, { error: `No completed task "${segments[1]}"` });
+      state.completed = state.completed.filter((c) => c !== rec);
+      record(state, 'completed.delete', { id: rec.id });
+      saveState(state);
+      return sendJson(res, 200, { deleted: rec.id });
+    }
+
+    return sendJson(res, 405, { error: 'Unsupported completed route/method' });
+  }
+
   return sendJson(res, 404, { error: 'Unknown API route' });
 }
 
 function normalizeWeekOrder(state) {
   const sorted = [...state.week].sort((a, b) => a.order - b.order);
   sorted.forEach((t, i) => (t.order = i));
+}
+
+function normalizeProjectsOrder(state) {
+  const sorted = [...state.projects].sort((a, b) => a.order - b.order);
+  sorted.forEach((p, i) => (p.order = i));
 }
 
 // Re-pack focus order into 0..n after inserts/reorders that used -1 etc.
