@@ -20,8 +20,12 @@ node server.js
 
 Then open **http://localhost:4300** and put it full-screen (F11).
 
-- State lives in `data/state.json` (auto-created from `data/seed.json` on first run).
-- To reset to the demo data, delete `data/state.json` and refresh.
+- State lives in `data/state.json` (auto-created from `data/seed.json` on first run). This
+  is the live database — all tasks, statuses, edits and completed items.
+- The server auto-backs up `state.json` to `data/backups/` on start and every 6 hours (last
+  20 kept), so an accidental delete is recoverable from the previous snapshot.
+- To reset a **local/test** copy to demo data, delete `data/state.json` and refresh. **Do
+  not do this on a live server** — it wipes real data (see [DEPLOY.md](DEPLOY.md)).
 - The UI polls the API every 5 seconds, so changes made by the API (or ChatGPT)
   appear on the monitor within a few seconds automatically.
 

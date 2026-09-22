@@ -92,6 +92,29 @@ function saveState(state) {
   fs.renameSync(tmp, STATE_FILE); // atomic-ish replace
 }
 
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+const BACKUPS_TO_KEEP = 20;
+
+// Snapshot the current state.json into data/backups/ and prune old ones.
+// Backups live in a separate folder, so deleting state.json never removes them —
+// the previous snapshot is always available to restore from.
+function backupState() {
+  try {
+    if (!fs.existsSync(STATE_FILE)) return; // nothing to back up yet
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    fs.copyFileSync(STATE_FILE, path.join(BACKUP_DIR, `state-${ts}.json`));
+    const files = fs.readdirSync(BACKUP_DIR)
+      .filter((f) => f.startsWith('state-') && f.endsWith('.json'))
+      .sort(); // ISO timestamps sort chronologically
+    for (const f of files.slice(0, Math.max(0, files.length - BACKUPS_TO_KEEP))) {
+      fs.unlinkSync(path.join(BACKUP_DIR, f));
+    }
+  } catch (e) {
+    /* backups are best-effort; never crash the server over one */
+  }
+}
+
 function record(state, action, detail) {
   state.history = state.history || [];
   state.history.unshift({
@@ -848,6 +871,8 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
+  backupState(); // snapshot the previous run's data before anything can change it
+  setInterval(backupState, 6 * 60 * 60 * 1000); // and every 6 hours while running
   loadState(); // ensure state.json exists on boot
   console.log('');
   console.log('  ALBANY DATA SYSTEMS — Chief of Staff Dashboard');
@@ -859,6 +884,7 @@ server.listen(PORT, () => {
   } else {
     console.log('  Auth:       OFF (open mode — fine for local dev; set DASHBOARD_TOKEN before exposing)');
   }
+  console.log('  Backups:    data/backups/ (snapshot on start + every 6h, last 20 kept)');
   console.log('');
   console.log('  Put it full-screen on your monitor and sit back.');
   console.log('');

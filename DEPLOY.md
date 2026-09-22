@@ -123,6 +123,39 @@ Changes appear on the monitor within ~5 seconds (it polls the API).
 
 ---
 
+## Updating a live server (data-safe)
+
+Once the dashboard holds real data, deploy new code like this — it keeps your data:
+
+```
+cd ~/ads-dashboard && git pull && sudo systemctl restart ads-dashboard
+```
+
+`data/state.json` is your live database (every task, status, edit, completed item).
+A `git pull` + restart never touches it; the app auto-adds any new fields/sections.
+
+> ⚠️ **Do NOT run `rm data/state.json`** on a live server. That deletes your data and the
+> app rebuilds it from the demo seed on restart. Only use it on a throwaway/test box, or
+> the very first time you stand the server up.
+
+New *demo* content from `data/seed.json` will not appear on an existing server (by design —
+your real data wins). Add real projects and tasks through the UI or ChatGPT.
+
+## Backups & restore
+
+The server snapshots `state.json` into `data/backups/` on every start and every 6 hours,
+keeping the last 20. That folder is separate from `state.json`, so even deleting the live
+file leaves the previous snapshots intact.
+
+To restore one:
+```
+ls -t ~/ads-dashboard/data/backups/          # newest first
+cp ~/ads-dashboard/data/backups/state-<timestamp>.json ~/ads-dashboard/data/state.json
+sudo systemctl restart ads-dashboard
+```
+
+---
+
 ## Security notes
 - The token guards **all** of `/api/*` (reads and writes). `/api/health` is open for uptime checks.
 - Never commit `.env` — it's gitignored.
