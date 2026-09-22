@@ -65,7 +65,16 @@
             <h2>CURRENT PROJECTS</h2>
             <span class="week-sub">Active work</span>
           </div>
-          <div class="projects-grid" id="projects-grid"></div>
+          <div class="projects-columns">
+            <div class="projects-col">
+              <div class="projects-col-head">Immediate</div>
+              <div class="projects-col-list" id="projects-immediate"></div>
+            </div>
+            <div class="projects-col">
+              <div class="projects-col-head">Long-term</div>
+              <div class="projects-col-list" id="projects-longterm"></div>
+            </div>
+          </div>
           <button class="mini-btn add-task week-add" id="project-add">+ Add project</button>
         </section>
       </aside>
@@ -99,6 +108,9 @@
       <label class="wm-label">Details &amp; notes</label>
       <textarea id="wm-note" class="wm-input" rows="4" placeholder="Everything you need to know about this project…"></textarea>
 
+      <label class="wm-label">Project</label>
+      <select id="wm-project" class="wm-input"></select>
+
       <label class="wm-label">Status</label>
       <div class="wm-status-picker" id="wm-status-picker"></div>
 
@@ -124,14 +136,19 @@
 
       <div class="pm-row">
         <div class="pm-field">
-          <label class="wm-label">Status</label>
-          <div class="wm-status-picker" id="pm-status-picker"></div>
+          <label class="wm-label">Column</label>
+          <div class="pm-group-toggle" id="pm-group-toggle">
+            <button type="button" class="pm-group-btn" data-group="immediate">Immediate</button>
+            <button type="button" class="pm-group-btn" data-group="long-term">Long-term</button>
+          </div>
         </div>
         <div class="pm-field">
           <label class="wm-label">Stage</label>
           <input type="text" id="pm-stage" class="wm-input" placeholder="e.g. In development" />
         </div>
       </div>
+      <label class="wm-label">Status</label>
+      <div class="wm-status-picker" id="pm-status-picker"></div>
 
       <label class="wm-label">Website / link</label>
       <input type="text" id="pm-url" class="wm-input" placeholder="https://…" />

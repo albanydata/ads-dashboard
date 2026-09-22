@@ -420,6 +420,7 @@ async function handleApi(req, res, segments, method) {
             text: body.text,
             status: validateStatus(body.status) || 'green',
             note: body.note || '',
+            projectId: body.projectId || '',
           };
           cat.items.push(item);
           record(state, 'item.create', { category: cat.id, id: item.id });
@@ -437,6 +438,7 @@ async function handleApi(req, res, segments, method) {
           if (body.text !== undefined) item.text = body.text;
           if (body.status !== undefined) item.status = validateStatus(body.status);
           if (body.note !== undefined) item.note = body.note;
+          if (body.projectId !== undefined) item.projectId = body.projectId;
           record(state, 'item.update', { category: cat.id, id: item.id, changes: body });
           saveState(state);
           return sendJson(res, 200, item);
@@ -587,6 +589,7 @@ async function handleApi(req, res, segments, method) {
           title: body.title,
           meta: body.meta || '',
           note: body.note || '',
+          projectId: body.projectId || '',
           status: validateStatus(body.status) || 'green',
           done: !!body.done,
           order: body.position === 'top' ? -1 : (body.order != null ? body.order : nextOrder(state.week)),
@@ -608,6 +611,7 @@ async function handleApi(req, res, segments, method) {
         if (body.title !== undefined) task.title = body.title;
         if (body.meta !== undefined) task.meta = body.meta;
         if (body.note !== undefined) task.note = body.note;
+        if (body.projectId !== undefined) task.projectId = body.projectId;
         if (body.status !== undefined) task.status = validateStatus(body.status);
         if (body.done !== undefined) task.done = !!body.done;
         if (body.position === 'top') task.order = -1;
@@ -659,6 +663,7 @@ async function handleApi(req, res, segments, method) {
           stage: body.stage || '',
           url: body.url || '',
           description: body.description || '',
+          group: body.group === 'immediate' ? 'immediate' : 'long-term',
           status: validateStatus(body.status) || 'purple',
           note: body.note || '',
           order: body.position === 'top' ? -1 : (body.order != null ? body.order : nextOrder(state.projects)),
@@ -683,6 +688,7 @@ async function handleApi(req, res, segments, method) {
         if (body.stage !== undefined) project.stage = body.stage;
         if (body.url !== undefined) project.url = body.url;
         if (body.description !== undefined) project.description = body.description;
+        if (body.group !== undefined) project.group = body.group === 'immediate' ? 'immediate' : 'long-term';
         if (body.status !== undefined) project.status = validateStatus(body.status);
         if (body.note !== undefined) project.note = body.note;
         if (body.position === 'top') project.order = -1;
@@ -763,8 +769,15 @@ function normalizeWeekOrder(state) {
 }
 
 function normalizeProjectsOrder(state) {
-  const sorted = [...state.projects].sort((a, b) => a.order - b.order);
-  sorted.forEach((p, i) => (p.order = i));
+  // Re-pack order within each group (immediate / long-term) independently.
+  const groups = {};
+  for (const p of state.projects) {
+    const g = p.group || 'long-term';
+    (groups[g] = groups[g] || []).push(p);
+  }
+  for (const g of Object.keys(groups)) {
+    groups[g].sort((a, b) => a.order - b.order).forEach((p, i) => (p.order = i));
+  }
 }
 
 // Re-pack focus order into 0..n after inserts/reorders that used -1 etc.

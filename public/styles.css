@@ -557,6 +557,76 @@ textarea.wm-input { resize: vertical; }
 .pm-row { display: flex; gap: 20px; flex-wrap: wrap; }
 .pm-field { flex: 1; min-width: 180px; }
 #pm-open { display: inline-flex; align-items: center; text-decoration: none; }
+.pm-group-toggle { display: flex; gap: 6px; }
+.pm-group-btn {
+  flex: 1;
+  padding: 9px 8px;
+  border-radius: 9px;
+  border: 1px solid var(--border-hi);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+.pm-group-btn.active { background: var(--accent-deep); color: #fff; border-color: transparent; }
+
+/* Two-column project layout */
+.projects-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.projects-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.projects-col-head {
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-faint); font-weight: 700;
+  padding-bottom: 5px; border-bottom: 1px solid var(--border);
+}
+.projects-col-list { display: flex; flex-direction: column; gap: 8px; }
+
+/* Red open-task badge on a project box */
+.project-badge {
+  min-width: 20px; height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #3a0512;
+  font-size: 12px; font-weight: 800;
+  display: grid; place-items: center;
+  box-shadow: 0 0 12px 1px var(--red-glow);
+  flex-shrink: 0;
+}
+
+/* Project link tag on a task */
+.proj-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(124, 92, 255, 0.15);
+  color: var(--accent);
+  border: 1px solid var(--border-hi);
+  white-space: nowrap;
+}
+.detail-tags { margin-top: 6px; }
+.week-tag { margin-top: 5px; }
+
+/* Selects inside forms */
+select.edit-project {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-hi);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 7px 10px;
+  font-family: inherit;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+select.edit-project:focus, select.wm-input:focus { outline: none; border-color: var(--accent); }
+
+@media (max-width: 520px) {
+  .projects-columns { grid-template-columns: 1fr; }
+}
 
 /* ---------- Footer ---------- */
 .footer {

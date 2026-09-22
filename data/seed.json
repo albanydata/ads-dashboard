@@ -12,8 +12,18 @@
       "summary": "No meetings · 3 priorities",
       "order": 0,
       "items": [
-        { "id": "today-1", "text": "No meetings scheduled", "status": "green", "note": "" },
-        { "id": "today-2", "text": "3 priorities in focus", "status": "green", "note": "See Your Focus below" }
+        {
+          "id": "today-1",
+          "text": "No meetings scheduled",
+          "status": "green",
+          "note": ""
+        },
+        {
+          "id": "today-2",
+          "text": "3 priorities in focus",
+          "status": "green",
+          "note": "See Your Focus below"
+        }
       ]
     },
     {
@@ -23,7 +33,12 @@
       "summary": "PPA enrollment question · 1 item",
       "order": 1,
       "items": [
-        { "id": "needs-1", "text": "PPA enrollment question awaiting your decision", "status": "yellow", "note": "Active enrollment discussion — respond if needed" }
+        {
+          "id": "needs-1",
+          "text": "PPA enrollment question awaiting your decision",
+          "status": "yellow",
+          "note": "Active enrollment discussion — respond if needed"
+        }
       ]
     },
     {
@@ -33,10 +48,30 @@
       "summary": "14 active sites · 2 tasks · No critical issues",
       "order": 2,
       "items": [
-        { "id": "bmts-1", "text": "2 open tasks", "status": "green", "note": "" },
-        { "id": "bmts-2", "text": "1 site needs attention", "status": "yellow", "note": "Minor content review" },
-        { "id": "bmts-3", "text": "1 social connection awaiting approval", "status": "yellow", "note": "Facebook page link" },
-        { "id": "bmts-4", "text": "0 critical errors", "status": "green", "note": "" }
+        {
+          "id": "bmts-1",
+          "text": "2 open tasks",
+          "status": "green",
+          "note": ""
+        },
+        {
+          "id": "bmts-2",
+          "text": "1 site needs attention",
+          "status": "yellow",
+          "note": "Minor content review"
+        },
+        {
+          "id": "bmts-3",
+          "text": "1 social connection awaiting approval",
+          "status": "yellow",
+          "note": "Facebook page link"
+        },
+        {
+          "id": "bmts-4",
+          "text": "0 critical errors",
+          "status": "green",
+          "note": ""
+        }
       ]
     },
     {
@@ -46,7 +81,13 @@
       "summary": "1 new ADS inquiry needs review",
       "order": 3,
       "items": [
-        { "id": "clients-1", "text": "New website inquiry needs disposition", "status": "yellow", "note": "Determine next step" }
+        {
+          "id": "clients-1",
+          "text": "New website inquiry needs disposition",
+          "status": "yellow",
+          "note": "Determine next step",
+          "projectId": "proj-margiasso"
+        }
       ]
     },
     {
@@ -56,7 +97,12 @@
       "summary": "Operating normally · 1 active conversation",
       "order": 4,
       "items": [
-        { "id": "ppa-1", "text": "1 active enrollment conversation", "status": "purple", "note": "In progress — no action required yet" }
+        {
+          "id": "ppa-1",
+          "text": "1 active enrollment conversation",
+          "status": "purple",
+          "note": "In progress — no action required yet"
+        }
       ]
     },
     {
@@ -110,6 +156,7 @@
       "title": "Complete social platform approvals",
       "meta": "BMTS · due Friday",
       "note": "Facebook and Instagram submitted. Still need TikTok, Pinterest, and YouTube application/approval work finished.",
+      "projectId": "proj-bmts",
       "status": "yellow",
       "done": false,
       "order": 0
@@ -153,6 +200,45 @@
   ],
   "projects": [
     {
+      "id": "proj-margiasso",
+      "name": "Margiasso Roofing",
+      "logo": "logos/margiasso.svg",
+      "tagline": "Placeholder tagline — edit me",
+      "stage": "Active",
+      "url": "",
+      "description": "Add a description of Margiasso Roofing here.",
+      "status": "purple",
+      "note": "",
+      "group": "immediate",
+      "order": 0
+    },
+    {
+      "id": "proj-albanypaintball",
+      "name": "Albany Paintball",
+      "logo": "logos/albanypaintball.svg",
+      "tagline": "Placeholder tagline — edit me",
+      "stage": "Active",
+      "url": "",
+      "description": "Add a description of Albany Paintball here.",
+      "status": "purple",
+      "note": "",
+      "group": "immediate",
+      "order": 1
+    },
+    {
+      "id": "proj-djnorthrop",
+      "name": "DJ Northrop Properties",
+      "logo": "logos/djnorthrop.svg",
+      "tagline": "Placeholder tagline — edit me",
+      "stage": "Active",
+      "url": "",
+      "description": "Add a description of DJ Northrop Properties here.",
+      "status": "purple",
+      "note": "",
+      "group": "immediate",
+      "order": 2
+    },
+    {
       "id": "proj-bmts",
       "name": "Build My Trade Site",
       "logo": "logos/bmts.svg",
@@ -162,7 +248,8 @@
       "description": "The flagship product. Add the key details here — current focus, what's next, and anything you want to see at a glance when you open this project.",
       "status": "purple",
       "note": "",
-      "order": 0
+      "order": 0,
+      "group": "long-term"
     },
     {
       "id": "proj-fathom",
@@ -174,7 +261,8 @@
       "description": "Add a description of Fathom App here.",
       "status": "purple",
       "note": "",
-      "order": 1
+      "order": 1,
+      "group": "long-term"
     },
     {
       "id": "proj-gamebuilt",
@@ -186,7 +274,8 @@
       "description": "Add a description of GameBuilt here.",
       "status": "purple",
       "note": "",
-      "order": 2
+      "order": 2,
+      "group": "long-term"
     },
     {
       "id": "proj-lobbysync",
@@ -198,7 +287,8 @@
       "description": "Add a description of Lobby Sync here.",
       "status": "purple",
       "note": "",
-      "order": 3
+      "order": 3,
+      "group": "long-term"
     },
     {
       "id": "proj-travelclub",
@@ -210,7 +300,8 @@
       "description": "Add a description of Travel Club Software here.",
       "status": "purple",
       "note": "",
-      "order": 4
+      "order": 4,
+      "group": "long-term"
     },
     {
       "id": "proj-coinslabx",
@@ -222,7 +313,8 @@
       "description": "Add a description of CoinSlabX here.",
       "status": "purple",
       "note": "",
-      "order": 5
+      "order": 5,
+      "group": "long-term"
     }
   ],
   "history": []

@@ -73,6 +73,7 @@ paths:
                   type: string
                   enum: [green, yellow, red, purple]
                 note: { type: string }
+                projectId: { type: string, description: Optional project id this task belongs to }
       responses: { '201': { description: Created item } }
   /api/categories/{key}/items/{itemId}:
     patch:
@@ -100,6 +101,7 @@ paths:
                   type: string
                   enum: [green, yellow, red, purple]
                 note: { type: string }
+                projectId: { type: string, description: Optional project id this task belongs to }
       responses: { '200': { description: Updated item } }
     delete:
       operationId: deleteCategoryItem
@@ -214,6 +216,7 @@ paths:
                 title: { type: string }
                 meta: { type: string, description: 'Small context line, e.g. "BMTS · due Friday"' }
                 note: { type: string, description: Longer details/notes for this weekly task }
+                projectId: { type: string, description: Optional project id this task belongs to }
                 status:
                   type: string
                   enum: [green, yellow, red, purple]
@@ -238,6 +241,7 @@ paths:
                 title: { type: string }
                 meta: { type: string }
                 note: { type: string }
+                projectId: { type: string, description: Optional project id this task belongs to }
                 status:
                   type: string
                   enum: [green, yellow, red, purple]
@@ -317,6 +321,7 @@ paths:
                 stage: { type: string, description: 'e.g. Planning, In development, Live' }
                 url: { type: string, description: Website or link for the project }
                 description: { type: string, description: Longer description of the project }
+                group: { type: string, enum: [immediate, long-term], description: Which column the project appears in }
                 status:
                   type: string
                   enum: [green, yellow, red, purple]
@@ -345,6 +350,7 @@ paths:
                 stage: { type: string }
                 url: { type: string }
                 description: { type: string }
+                group: { type: string, enum: [immediate, long-term] }
                 status:
                   type: string
                   enum: [green, yellow, red, purple]

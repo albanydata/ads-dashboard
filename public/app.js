@@ -16,6 +16,7 @@ let currentWeekTask = null;      // the week task open in the modal (null = new)
 let weekModalStatus = 'green';   // status selected in the modal
 let currentProject = null;       // the project open in the modal (null = new)
 let projectModalStatus = 'purple';
+let projectModalGroup = 'long-term';
 
 // ---------- clock (updates locally every second) ----------
 function tick() {
@@ -149,6 +150,7 @@ function detailItemsHtml(cat) {
           <div class="detail-text">
             <div class="detail-main">${escapeHtml(item.text)}</div>
             ${item.note ? `<div class="detail-note">${escapeHtml(item.note)}</div>` : ''}
+            ${item.projectId ? `<div class="detail-tags">${projectTagHtml(item.projectId)}</div>` : ''}
           </div>
           <div class="detail-actions">
             <button class="mini-btn" data-action="edit" title="Edit task and note">✎</button>
@@ -187,6 +189,7 @@ function enterAddTask(cat, addEl) {
   addEl.innerHTML = `
     <input class="add-text edit-text" type="text" placeholder="New task…" />
     <textarea class="add-note edit-note" rows="2" placeholder="Note (optional)…"></textarea>
+    <select class="add-project edit-project">${projectOptionsHtml('')}</select>
     <div class="edit-actions">
       <button class="mini-btn save" data-action="add-save">Add</button>
       <button class="mini-btn" data-action="add-cancel">Cancel</button>
@@ -212,9 +215,10 @@ function saveAddTask(cat, addEl) {
   const textEl = addEl.querySelector('.add-text');
   const text = textEl.value.trim();
   const note = addEl.querySelector('.add-note').value.trim();
+  const projectId = addEl.querySelector('.add-project').value;
   if (!text) { textEl.focus(); return; }
   paused = false;
-  post(`/api/categories/${cat.id}/items`, { text, note, status: 'green' }).then(() => refresh(true));
+  post(`/api/categories/${cat.id}/items`, { text, note, projectId, status: 'green' }).then(() => refresh(true));
 }
 
 function completeItem(cat, itemId) {
@@ -231,6 +235,7 @@ function enterItemEdit(cat, itemId, itemEl) {
     <div class="detail-text">
       <input class="edit-text" type="text" value="${escapeAttr(item.text)}" />
       <textarea class="edit-note" rows="2" placeholder="Add a note…">${escapeHtml(item.note || '')}</textarea>
+      <select class="edit-project">${projectOptionsHtml(item.projectId || '')}</select>
       <div class="edit-actions">
         <button class="mini-btn save" data-action="save">Save</button>
         <button class="mini-btn" data-action="cancel">Cancel</button>
@@ -258,9 +263,10 @@ function saveItemEdit(cat, itemId, itemEl) {
   const textEl = itemEl.querySelector('.edit-text');
   const text = textEl.value.trim();
   const note = itemEl.querySelector('.edit-note').value.trim();
+  const projectId = itemEl.querySelector('.edit-project').value;
   if (!text) { textEl.focus(); return; }
   paused = false;
-  patch(`/api/categories/${cat.id}/items/${itemId}`, { text, note }).then(() => refresh(true));
+  patch(`/api/categories/${cat.id}/items/${itemId}`, { text, note, projectId }).then(() => refresh(true));
 }
 
 function toggleCard(id, card) {
@@ -314,6 +320,7 @@ function renderWeek() {
       <div class="week-text">
         <div class="week-title">${escapeHtml(task.title)}</div>
         ${task.meta ? `<div class="week-meta">${escapeHtml(task.meta)}</div>` : ''}
+        ${task.projectId ? `<div class="week-tag">${projectTagHtml(task.projectId)}</div>` : ''}
       </div>
     `;
     // Click a task to open its detail modal (does NOT complete it).
@@ -330,6 +337,7 @@ function openWeekModal(task) {
   document.getElementById('wm-title').value = task ? task.title : '';
   document.getElementById('wm-meta').value = task ? (task.meta || '') : '';
   document.getElementById('wm-note').value = task ? (task.note || '') : '';
+  document.getElementById('wm-project').innerHTML = projectOptionsHtml(task ? (task.projectId || '') : '');
   document.getElementById('wm-complete').style.display = task ? '' : 'none';
   document.getElementById('wm-delete').style.display = task ? '' : 'none';
   renderWeekStatusPicker();
@@ -362,28 +370,63 @@ function closeWeekModal() {
 
 const STATUS_CYCLE = ['green', 'yellow', 'red', 'purple'];
 
+// Count open tasks (category items + weekly tasks) linked to each project.
+function projectTaskCounts() {
+  const counts = {};
+  for (const cat of (state.categories || [])) {
+    for (const it of (cat.items || [])) {
+      if (it.projectId) counts[it.projectId] = (counts[it.projectId] || 0) + 1;
+    }
+  }
+  for (const t of (state.week || [])) {
+    if (t.projectId) counts[t.projectId] = (counts[t.projectId] || 0) + 1;
+  }
+  return counts;
+}
+
+function projectById(id) {
+  return (state.projects || []).find((p) => p.id === id);
+}
+function projectTagHtml(id) {
+  const p = id && projectById(id);
+  return p ? `<span class="proj-tag">${escapeHtml(p.name)}</span>` : '';
+}
+function projectOptionsHtml(selectedId) {
+  const opts = [`<option value="">— No project —</option>`];
+  for (const p of (state.projects || [])) {
+    opts.push(`<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`);
+  }
+  return opts.join('');
+}
+
 function renderProjects() {
-  const grid = document.getElementById('projects-grid');
-  grid.innerHTML = '';
-  const projects = state.projects || [];
-  if (!projects.length) {
-    grid.innerHTML = '<div class="project-empty">No active projects.</div>';
-    return;
-  }
-  for (const p of projects) {
-    const box = document.createElement('div');
-    box.className = 'project-box status-color-' + p.status;
-    box.title = 'Click to open';
-    box.innerHTML = `
-      ${p.logo
-        ? `<img class="project-logo" src="${escapeAttr(p.logo)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'project-dot'}))" />`
-        : '<span class="project-dot"></span>'}
-      <span class="project-name">${escapeHtml(p.name)}</span>
-      <span class="project-status-dot"></span>
-    `;
-    box.addEventListener('click', () => openProjectModal(p));
-    grid.appendChild(box);
-  }
+  const counts = projectTaskCounts();
+  const fill = (elId, group) => {
+    const el = document.getElementById(elId);
+    el.innerHTML = '';
+    const list = (state.projects || [])
+      .filter((p) => (p.group || 'long-term') === group)
+      .sort((a, b) => a.order - b.order);
+    if (!list.length) { el.innerHTML = '<div class="project-empty">None yet</div>'; return; }
+    for (const p of list) {
+      const n = counts[p.id] || 0;
+      const box = document.createElement('div');
+      box.className = 'project-box status-color-' + p.status;
+      box.title = 'Click to open';
+      box.innerHTML = `
+        ${p.logo
+          ? `<img class="project-logo" src="${escapeAttr(p.logo)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'project-dot'}))" />`
+          : '<span class="project-dot"></span>'}
+        <span class="project-name">${escapeHtml(p.name)}</span>
+        ${n ? `<span class="project-badge" title="${n} open task${n === 1 ? '' : 's'}">${n}</span>`
+            : '<span class="project-status-dot"></span>'}
+      `;
+      box.addEventListener('click', () => openProjectModal(p));
+      el.appendChild(box);
+    }
+  };
+  fill('projects-immediate', 'immediate');
+  fill('projects-longterm', 'long-term');
 }
 
 // ---------- project modal (large) ----------
@@ -400,6 +443,8 @@ function openProjectModal(project) {
   val('pm-note', project ? (project.note || '') : '');
   val('pm-logo-input', project ? (project.logo || '') : '');
   updateProjectLogoPreview(project ? project.logo : '');
+  projectModalGroup = project ? (project.group || 'long-term') : 'long-term';
+  updateProjectGroupToggle();
   renderProjectStatusPicker();
   const open = document.getElementById('pm-open');
   if (project && project.url) { open.href = project.url; open.style.display = ''; }
@@ -427,6 +472,12 @@ function renderProjectStatusPicker() {
       renderProjectStatusPicker();
     })
   );
+}
+
+function updateProjectGroupToggle() {
+  document.querySelectorAll('#pm-group-toggle .pm-group-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.group === projectModalGroup);
+  });
 }
 
 function closeProjectModal() {
@@ -613,7 +664,8 @@ document.getElementById('wm-save').addEventListener('click', () => {
   const meta = document.getElementById('wm-meta').value.trim();
   const note = document.getElementById('wm-note').value.trim();
   if (!title) { document.getElementById('wm-title').focus(); return; }
-  const body = { title, meta, note, status: weekModalStatus };
+  const projectId = document.getElementById('wm-project').value;
+  const body = { title, meta, note, projectId, status: weekModalStatus };
   const req = currentWeekTask
     ? patch(`/api/week/${currentWeekTask.id}`, body)
     : post('/api/week', body);
@@ -632,6 +684,9 @@ document.getElementById('wm-delete').addEventListener('click', () => {
 
 // Project modal wiring
 document.getElementById('project-add').addEventListener('click', () => openProjectModal(null));
+document.querySelectorAll('#pm-group-toggle .pm-group-btn').forEach((b) => {
+  b.addEventListener('click', () => { projectModalGroup = b.dataset.group; updateProjectGroupToggle(); });
+});
 document.getElementById('pm-close').addEventListener('click', closeProjectModal);
 document.getElementById('project-modal').addEventListener('click', (e) => {
   if (e.target.id === 'project-modal') closeProjectModal();
@@ -648,6 +703,7 @@ document.getElementById('pm-save').addEventListener('click', () => {
     description: document.getElementById('pm-description').value.trim(),
     note: document.getElementById('pm-note').value.trim(),
     logo: document.getElementById('pm-logo-input').value.trim(),
+    group: projectModalGroup,
     status: projectModalStatus,
   };
   const req = currentProject
