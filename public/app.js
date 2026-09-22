@@ -12,6 +12,9 @@ let lastGood = 0;
 let paused = false;      // true while inline-editing, so refresh won't wipe the form
 let lastSig = '';        // signature of last rendered state (skip needless re-renders)
 const expandedCards = new Set(); // category ids currently folded open
+let viewMode = (() => {
+  try { return localStorage.getItem('boardView') || 'categories'; } catch (e) { return 'categories'; }
+})();
 let currentWeekTask = null;      // the week task open in the modal (null = new)
 let weekModalStatus = 'green';   // status selected in the modal
 let currentProject = null;       // the project open in the modal (null = new)
@@ -112,6 +115,12 @@ function render() {
 function renderBoard() {
   const board = document.getElementById('board');
   board.innerHTML = '';
+  document.querySelectorAll('.board-tab').forEach((t) => t.classList.toggle('active', t.dataset.view === viewMode));
+  if (viewMode === 'date') return renderDateBoard(board);
+  renderCategoryBoard(board);
+}
+
+function renderCategoryBoard(board) {
   for (const cat of state.categories) {
     const attention = cat.status === 'yellow' || cat.status === 'red';
     const isOpen = expandedCards.has(cat.id);
@@ -139,6 +148,54 @@ function renderBoard() {
     card.querySelector('.card-detail').addEventListener('click', (e) => handleDetailClick(e, cat));
     board.appendChild(card);
   }
+}
+
+// Flat list of every task across categories, newest first.
+function renderDateBoard(board) {
+  const rows = [];
+  for (const cat of (state.categories || [])) {
+    for (const it of (cat.items || [])) rows.push({ it, cat });
+  }
+  rows.sort((a, b) => new Date(b.it.createdAt || 0) - new Date(a.it.createdAt || 0));
+
+  const wrap = document.createElement('div');
+  wrap.className = 'flat-card';
+  if (!rows.length) {
+    wrap.innerHTML = '<div class="detail-empty">No tasks yet.</div>';
+    board.appendChild(wrap);
+    return;
+  }
+  wrap.innerHTML = rows.map(({ it, cat }) => `
+    <div class="detail-item" data-item-id="${it.id}" data-cat="${cat.id}" style="--dotcolor: var(--${it.status}); --dotglow: var(--${it.status}-glow);">
+      <span class="detail-dot"></span>
+      <div class="detail-text">
+        <div class="detail-main">${escapeHtml(it.text)}</div>
+        ${it.note ? `<div class="detail-note">${escapeHtml(it.note)}</div>` : ''}
+        <div class="detail-tags"><span class="cat-tag">${escapeHtml(cat.label)}</span>${it.projectId ? projectTagHtml(it.projectId) : ''}</div>
+        ${addedMetaHtml(it)}
+      </div>
+      <div class="detail-actions">
+        <button class="mini-btn" data-action="edit" title="Edit task and note">✎</button>
+        <button class="mini-btn mini-done" data-action="done" title="Mark done">✓</button>
+      </div>
+    </div>
+  `).join('');
+  wrap.addEventListener('click', handleFlatClick);
+  board.appendChild(wrap);
+}
+
+function handleFlatClick(e) {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const itemEl = btn.closest('.detail-item');
+  const itemId = itemEl.dataset.itemId;
+  const cat = (state.categories || []).find((c) => c.id === itemEl.dataset.cat);
+  if (!cat) return;
+  const action = btn.dataset.action;
+  if (action === 'done') completeItem(cat, itemId);
+  else if (action === 'edit') enterItemEdit(cat, itemId, itemEl);
+  else if (action === 'save') saveItemEdit(cat, itemId, itemEl);
+  else if (action === 'cancel') { paused = false; refresh(true); }
 }
 
 function detailItemsHtml(cat) {
@@ -668,6 +725,15 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.getElementById('edit-toggle').addEventListener('click', openEditor);
+
+// Board view tabs (Categories / By date)
+document.querySelectorAll('.board-tab').forEach((t) => {
+  t.addEventListener('click', () => {
+    viewMode = t.dataset.view;
+    try { localStorage.setItem('boardView', viewMode); } catch (e) { /* ignore */ }
+    if (state) renderBoard();
+  });
+});
 
 // Weekly task modal wiring
 document.getElementById('week-add').addEventListener('click', () => openWeekModal(null));

@@ -168,10 +168,70 @@ body {
 }
 
 /* ---------- Status board ---------- */
+.board-section { display: flex; flex-direction: column; gap: 14px; }
+.board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.board-head h2 {
+  font-size: clamp(18px, 1.9vw, 27px);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  text-shadow: 0 0 30px var(--accent-glow);
+}
+.board-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px;
+}
+.board-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.board-tab:hover { color: var(--text); }
+.board-tab.active { background: var(--accent-deep); color: #fff; }
+
 .board {
   display: flex;
   flex-direction: column;
   gap: 11px;
+}
+.flat-card {
+  padding: clamp(16px, 1.8vw, 24px) clamp(18px, 2vw, 26px);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--bg-card-hi), var(--bg-card));
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cat-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-dim);
+  border: 1px solid var(--border-hi);
+  white-space: nowrap;
+  font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
 .card {
